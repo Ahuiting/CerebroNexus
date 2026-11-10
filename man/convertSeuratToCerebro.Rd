@@ -65,10 +65,14 @@ levels allowed in a grouping variable. Groups with more unique values than
 this threshold will be excluded; default: \code{100}.}
 
 \item{nUMI}{Character string specifying the column name in metadata containing
-the number of UMIs per cell; default: \code{"nCount_RNA"}.}
+the number of UMIs per cell; default: \code{"nCount_RNA"}. When left at
+the default and \code{assay} is not \code{"RNA"}, the column Seurat
+creates for that assay (e.g. \code{nCount_Xenium}, \code{nCount_Atera})
+is used if present.}
 
 \item{nGene}{Character string specifying the column name in metadata containing
-the number of expressed genes per cell; default: \code{"nFeature_RNA"}.}
+the number of expressed genes per cell; default: \code{"nFeature_RNA"}.
+Follows \code{assay} the same way as \code{nUMI}.}
 
 \item{add_all_meta_data}{Logical indicating whether to include all metadata
 columns in the export; default: \code{TRUE}.}

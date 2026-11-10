@@ -77,6 +77,20 @@
   invisible(TRUE)
 }
 
+## Per-cell total column Seurat creates for an assay (`nCount_<assay>`,
+## `nFeature_<assay>`). Returns `default` when the assay is RNA or the column
+## is absent, so an object without it still fails with the usual message.
+.seuratAssayCountColumn <- function(meta, prefix, assay, default) {
+  if (!is.character(assay) || length(assay) != 1L || identical(assay, "RNA")) {
+    return(default)
+  }
+  column <- paste0(prefix, "_", assay)
+  if (column %in% colnames(meta) && !default %in% colnames(meta)) {
+    return(column)
+  }
+  default
+}
+
 ## Levels of a grouping column: the factor levels, otherwise the unique values
 ## without NA, with a warning about the cells that have none. `na_text` is the
 ## warning text between the cell count and the group name.

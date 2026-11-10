@@ -1,3 +1,18 @@
+# CerebroNexus (development version)
+
+- Tested with Seurat 6.0.0 (SeuratObject 5.4.0). Seurat 6 keeps the v5 object
+  and assay classes, so no change was needed to read it: the Seurat, spatial
+  and builder tests pass on Seurat 6 as on 5.5.1, and `getMarkerGenes()` gives
+  the same markers with Seurat 6's new `presto` path for `FindAllMarkers()`.
+- `convertSeuratToCerebro()` follows the exported assay for its per-cell
+  totals: when `nUMI`/`nGene` are left at their defaults and `assay` is not
+  `RNA`, it uses `nCount_<assay>`/`nFeature_<assay>` if they exist. Objects
+  from `LoadXenium()`, Seurat 6's `LoadAtera()` or a Visium `Spatial` assay
+  no longer stop with "`nCount_RNA` not found in meta data". An explicit
+  `nUMI`/`nGene` is used as given.
+- The Spatial analysis vignette shows how to export a 10x Atera object read
+  with Seurat 6.
+
 # CerebroNexus 7.2.0
 
 - The Immune repertoire SizeDist tab draws in an App whose folder is read-only,

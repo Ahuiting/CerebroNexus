@@ -328,9 +328,13 @@
 #'   levels allowed in a grouping variable. Groups with more unique values than
 #'   this threshold will be excluded; default: \code{100}.
 #' @param nUMI Character string specifying the column name in metadata containing
-#'   the number of UMIs per cell; default: \code{"nCount_RNA"}.
+#'   the number of UMIs per cell; default: \code{"nCount_RNA"}. When left at
+#'   the default and \code{assay} is not \code{"RNA"}, the column Seurat
+#'   creates for that assay (e.g. \code{nCount_Xenium}, \code{nCount_Atera})
+#'   is used if present.
 #' @param nGene Character string specifying the column name in metadata containing
 #'   the number of expressed genes per cell; default: \code{"nFeature_RNA"}.
+#'   Follows \code{assay} the same way as \code{nUMI}.
 #' @param add_all_meta_data Logical indicating whether to include all metadata
 #'   columns in the export; default: \code{TRUE}.
 #' @param use_delayed_array Logical indicating whether to convert expression
@@ -485,6 +489,16 @@ convertSeuratToCerebro <- function(
         call. = FALSE
       )
     )
+  }
+
+  ## Seurat names its per-cell totals after the assay (nCount_Xenium,
+  ## nCount_Atera, nCount_Spatial, ...). When the caller left nUMI/nGene at
+  ## their RNA defaults but exports another assay, follow the assay.
+  if (missing(nUMI)) {
+    nUMI <- .seuratAssayCountColumn(seurat@meta.data, "nCount", assay, nUMI)
+  }
+  if (missing(nGene)) {
+    nGene <- .seuratAssayCountColumn(seurat@meta.data, "nFeature", assay, nGene)
   }
 
   # Validate groups, rename them, attach markers and summaries ---------------##
