@@ -77,18 +77,69 @@
   invisible(TRUE)
 }
 
-## Per-cell total column Seurat creates for an assay (`nCount_<assay>`,
-## `nFeature_<assay>`). Returns `default` when the assay is RNA or the column
-## is absent, so an object without it still fails with the usual message.
-.seuratAssayCountColumn <- function(meta, prefix, assay, default) {
-  if (!is.character(assay) || length(assay) != 1L || identical(assay, "RNA")) {
-    return(default)
+## Per-cell UMI / gene count column for an assay, chosen by the same rule as
+## the Builder's default (`qc_choices()` in inst/builder/inspect.R, which is
+## sourced without the package and so keeps its own copy; a test compares
+## the two): the first numeric column among the preferred names, otherwise the
+## first column whose name looks like a count. NULL when there is none.
+.seuratQcColumn <- function(meta, kind = c("umi", "gene"), assay) {
+  kind <- match.arg(kind)
+  umi_pattern <- paste0(
+    "^(nCount|nUMI)|^total[._]?(count|UMI)s?$|",
+    "^n[._]?counts?$|^(n[._])?UMIs?([._]counts?)?$"
+  )
+  gene_pattern <- paste0(
+    "^(nFeature|nGene)|^total[._]?genes?$|",
+    "^n[._]?genes?([._]by[._]counts)?$|^n[._]?features?$"
+  )
+  numeric_values <- function(values) {
+    if (is.numeric(values)) {
+      return(TRUE)
+    }
+    if (!(is.factor(values) || is.character(values))) {
+      return(FALSE)
+    }
+    text <- trimws(as.character(values))
+    missing <- is.na(values) | !nzchar(text)
+    numeric <- suppressWarnings(as.numeric(text))
+    any(!missing) && !any(!missing & !is.finite(numeric))
   }
-  column <- paste0(prefix, "_", assay)
-  if (column %in% colnames(meta) && !default %in% colnames(meta)) {
-    return(column)
+  columns <- colnames(meta)
+  qc_columns <- columns[grepl(
+    paste0(umi_pattern, "|", gene_pattern),
+    columns,
+    ignore.case = TRUE
+  )]
+  numeric_cols <- qc_columns[vapply(
+    qc_columns,
+    function(column) numeric_values(meta[[column]]),
+    logical(1)
+  )]
+  if (identical(kind, "umi")) {
+    preferred <- c(
+      paste0("nCount_", assay),
+      "nUMI",
+      "nCount_RNA",
+      "total_counts",
+      "n_counts",
+      "total_UMIs",
+      "UMI"
+    )
+    pattern <- umi_pattern
+  } else {
+    preferred <- c(
+      paste0("nFeature_", assay),
+      "nGene",
+      "nFeature_RNA",
+      "n_genes_by_counts",
+      "n_genes",
+      "total_genes"
+    )
+    pattern <- gene_pattern
   }
-  default
+  relevant <- numeric_cols[grepl(pattern, numeric_cols, ignore.case = TRUE)]
+  choices <- unique(c(intersect(preferred, numeric_cols), relevant))
+  if (length(choices)) choices[[1L]] else NULL
 }
 
 ## Levels of a grouping column: the factor levels, otherwise the unique values

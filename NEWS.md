@@ -4,12 +4,17 @@
   and assay classes, so no change was needed to read it: the Seurat, spatial
   and builder tests pass on Seurat 6 as on 5.5.1, and `getMarkerGenes()` gives
   the same markers with Seurat 6's new `presto` path for `FindAllMarkers()`.
-- `convertSeuratToCerebro()` follows the exported assay for its per-cell
-  totals: when `nUMI`/`nGene` are left at their defaults and `assay` is not
-  `RNA`, it uses `nCount_<assay>`/`nFeature_<assay>` if they exist. Objects
-  from `LoadXenium()`, Seurat 6's `LoadAtera()` or a Visium `Spatial` assay
-  no longer stop with "`nCount_RNA` not found in meta data". An explicit
-  `nUMI`/`nGene` is used as given.
+- `convertSeuratToCerebro()` picks its per-cell UMI and gene count columns
+  the way the Builder does when `nUMI`/`nGene` are not given: the first
+  numeric column among `nCount_<assay>`, `nUMI`, `nCount_RNA`, `total_counts`,
+  `n_counts`, `total_UMIs`, `UMI` (genes: `nFeature_<assay>`, `nGene`,
+  `nFeature_RNA`, `n_genes_by_counts`, `n_genes`, `total_genes`). Objects from
+  `LoadXenium()`, Seurat 6's `LoadAtera()` or a Visium `Spatial` assay no
+  longer stop with "`nCount_RNA` not found in meta data", and the column used
+  is logged. With `assay = "SCT"` the export now takes `nCount_SCT` /
+  `nFeature_SCT`, as the Builder already did, instead of the RNA totals; pass
+  `nUMI = "nCount_RNA"` to keep those. An explicit `nUMI`/`nGene` is used as
+  given.
 - The Spatial analysis vignette shows how to export a 10x Atera object read
   with Seurat 6.
 

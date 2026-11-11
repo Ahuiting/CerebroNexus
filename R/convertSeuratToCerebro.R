@@ -328,13 +328,18 @@
 #'   levels allowed in a grouping variable. Groups with more unique values than
 #'   this threshold will be excluded; default: \code{100}.
 #' @param nUMI Character string specifying the column name in metadata containing
-#'   the number of UMIs per cell; default: \code{"nCount_RNA"}. When left at
-#'   the default and \code{assay} is not \code{"RNA"}, the column Seurat
-#'   creates for that assay (e.g. \code{nCount_Xenium}, \code{nCount_Atera})
-#'   is used if present.
+#'   the number of UMIs per cell. When not given, it is chosen as in the
+#'   Builder: the first numeric column among \code{nCount_<assay>} (e.g.
+#'   \code{nCount_RNA}, \code{nCount_SCT}, \code{nCount_Xenium},
+#'   \code{nCount_Atera}), \code{nUMI}, \code{nCount_RNA},
+#'   \code{total_counts}, \code{n_counts}, \code{total_UMIs} and \code{UMI},
+#'   otherwise another column named like a count; \code{"nCount_RNA"} when
+#'   there is none.
 #' @param nGene Character string specifying the column name in metadata containing
-#'   the number of expressed genes per cell; default: \code{"nFeature_RNA"}.
-#'   Follows \code{assay} the same way as \code{nUMI}.
+#'   the number of expressed genes per cell. When not given, chosen the same
+#'   way from \code{nFeature_<assay>}, \code{nGene}, \code{nFeature_RNA},
+#'   \code{n_genes_by_counts}, \code{n_genes} and \code{total_genes};
+#'   \code{"nFeature_RNA"} when there is none.
 #' @param add_all_meta_data Logical indicating whether to include all metadata
 #'   columns in the export; default: \code{TRUE}.
 #' @param use_delayed_array Logical indicating whether to convert expression
@@ -492,13 +497,27 @@ convertSeuratToCerebro <- function(
   }
 
   ## Seurat names its per-cell totals after the assay (nCount_Xenium,
-  ## nCount_Atera, nCount_Spatial, ...). When the caller left nUMI/nGene at
-  ## their RNA defaults but exports another assay, follow the assay.
-  if (missing(nUMI)) {
-    nUMI <- .seuratAssayCountColumn(seurat@meta.data, "nCount", assay, nUMI)
+  ## nCount_Atera, nCount_SCT, ...). When the caller left nUMI/nGene unset,
+  ## pick them the way the Builder does, so both routes export the same
+  ## column. Without a match the default is kept and fails as before.
+  pick_nUMI <- missing(nUMI)
+  pick_nGene <- missing(nGene)
+  if (pick_nUMI) {
+    nUMI <- .seuratQcColumn(seurat@meta.data, "umi", assay) %||% nUMI
   }
-  if (missing(nGene)) {
-    nGene <- .seuratAssayCountColumn(seurat@meta.data, "nFeature", assay, nGene)
+  if (pick_nGene) {
+    nGene <- .seuratQcColumn(seurat@meta.data, "gene", assay) %||% nGene
+  }
+  if ((pick_nUMI || pick_nGene) && verbose) {
+    .logStep(
+      "Per-cell counts for assay `",
+      assay,
+      "`: nUMI = `",
+      nUMI,
+      "`, nGene = `",
+      nGene,
+      "` (pass nUMI/nGene to choose others)."
+    )
   }
 
   # Validate groups, rename them, attach markers and summaries ---------------##
