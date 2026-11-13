@@ -1,0 +1,101 @@
+# Perform gene set enrichment analysis with GSVA.
+
+This function calculates enrichment scores, p- and q-value statistics
+for provided gene sets for specified groups of cells in given Seurat
+object using gene set variation analysis (GSVA). Calculation of p- and
+q-values for gene sets is performed as done in "Evaluation of methods to
+assign cell type labels to cell clusters from single-cell RNA-sequencing
+data", Diaz-Mejia et al., F1000Research (2019).
+
+## Usage
+
+``` r
+performGeneSetEnrichmentAnalysis(
+  object,
+  assay = "RNA",
+  GMT_file,
+  groups = NULL,
+  name = "cerebro_GSVA",
+  thresh_p_val = 0.05,
+  thresh_q_val = 0.1,
+  ...
+)
+```
+
+## Arguments
+
+- object:
+
+  Seurat object.
+
+- assay:
+
+  Assay to pull counts from; defaults to 'RNA'. Only relevant in Seurat
+  v3.0 or higher since the concept of assays wasn't implemented before.
+
+- GMT_file:
+
+  Path to GMT file containing the gene sets to be tested. The Broad
+  Institute provides many gene sets which can be downloaded:
+  https://www.gsea-msigdb.org/gsea/msigdb/index.jsp
+
+- groups:
+
+  Grouping variables (columns) in object@meta.data for which gene set
+  enrichment analysis should be performed
+
+- name:
+
+  Name of list that should be used to store the results in
+  object@misc\$enriched_pathways\$\<name\>; defaults to 'cerebro_GSVA'.
+
+- thresh_p_val:
+
+  Threshold for p-value, defaults to 0.05.
+
+- thresh_q_val:
+
+  Threshold for q-value, defaults to 0.1.
+
+- ...:
+
+  Further parameters passed to \`GSVA::gsvaParam()\`.
+
+## Value
+
+Seurat object with GSVA results for the specified grouping variables
+stored in object@misc\$enriched_pathways\$\<name\>
+
+## Examples
+
+``` r
+# \donttest{
+pbmc <- readRDS(system.file("extdata/examples/pbmc_seurat.rds",
+  package = "CerebroNexus"))
+example_gene_set <- system.file("extdata/example_gene_set.gmt",
+  package = "CerebroNexus")
+pbmc <- performGeneSetEnrichmentAnalysis(
+  object = pbmc,
+  GMT_file = example_gene_set,
+  groups = 'seurat_clusters',
+  thresh_p_val = 0.05,
+  thresh_q_val = 0.1
+)
+#> [13:58:49] Loading gene sets...
+#> [13:58:49] Loaded 2 gene sets from GMT file.
+#> [13:58:49] Extracting transcript counts from `data` slot of `RNA` assay...
+#> [13:58:49] Performing analysis for 2 subgroups of group `seurat_clusters`...
+#> ℹ GSVA version 2.6.12
+#> ℹ Searching for rows with constant values
+#> ℹ Calculating GSVA ranks
+#> ℹ kcdf='auto' (default)
+#> ℹ GSVA dense (classical) algorithm
+#> ℹ Row-wise ECDF estimation with Gaussian kernels
+#> ℹ Calculating row ECDFs
+#> ℹ Calculating column ranks
+#> ℹ GSVA dense (classical) algorithm
+#> ℹ Calculating GSVA scores for 2 gene sets
+#> ✔ Calculations finished
+#> [13:58:50] 0 gene sets passed the thresholds across all subgroups of group `seurat_clusters`.
+# }
+```

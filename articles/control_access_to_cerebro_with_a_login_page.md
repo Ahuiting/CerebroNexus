@@ -1,0 +1,416 @@
+# Control access to CerebroNexus with a login page
+
+## Overview
+
+[`createShinyApp()`](https://www.mheming.com/CerebroNexus/reference/createShinyApp.md)
+creates a public Viewer unless you pass `auth`. Auth lite expects two
+existing inputs:
+
+1.  an encrypted `shinymanager` database; and
+2.  an environment variable containing that database’s passphrase.
+
+The scripted workflow below copies the encrypted database into the App
+and keeps the passphrase in an external environment file. An App
+exported with a local `viewer-auth.env` instead carries its matching
+secret privately alongside `app.R`; protect the entire release during
+transfer and deployment. Neither workflow publishes the secret as a web
+resource. HTTPS is still required.
+
+![Auth lite checks the descriptor, environment, and database before
+publication and again when the Viewer
+starts.](img/auth-lite-validation.svg)
+
+Auth lite checks the descriptor, environment, and database before
+publication and again when the Viewer starts.
+
+## One-minute setup
+
+**Run this as:** the person preparing the Viewer release.
+
+**Run it on:** one trusted machine with R, CerebroNexus, and the source
+CRB files.
+
+**What happens:** you create one encrypted credentials database, one
+external secret file, and one login-protected App directory.
+
+**Verify:** the final
+[`createShinyApp()`](https://www.mheming.com/CerebroNexus/reference/createShinyApp.md)
+call must succeed before anything is deployed; then test one valid and
+one invalid login locally.
+
+Install the optional provider:
+
+``` r
+# R console — run this once to install and load the authentication tools.
+install.packages("shinymanager")
+library(CerebroNexus)
+```
+
+Generate a database passphrase from the operating system random source
+on a trusted Linux machine:
+
+``` bash
+# Terminal — run this command and save the result privately.
+head -c 32 /dev/urandom | base64
+```
+
+Prepare the private and App directories first. Run this once as the
+server operator; it makes the release account the owner so the
+subsequent R commands can write under `/srv` without elevated
+privileges:
+
+``` bash
+# Terminal — run this once on the trusted build or deployment machine.
+sudo install -d -m 0700 -o "$USER" -g "$(id -g)" /srv/cerebro/private
+sudo install -d -m 0755 -o "$USER" -g "$(id -g)" /srv/cerebro/apps
+```
+
+Create the environment file outside the App directory:
+
+``` r
+# R console — run this to create the external env file with private permissions.
+secret_file <- "/srv/cerebro/private/viewer-auth.env"
+stopifnot(!file.exists(secret_file))
+
+old_umask <- Sys.umask("077")
+tryCatch(
+  {
+    stopifnot(file.create(secret_file))
+    writeLines(
+      "CEREBRO_AUTH_PASSPHRASE=replace-with-the-random-value",
+      secret_file
+    )
+  },
+  finally = Sys.umask(old_umask)
+)
+Sys.chmod(secret_file, "0600")
+```
+
+Create the encrypted database:
+
+``` r
+# R console — run this to create the encrypted user database.
+readRenviron(secret_file)
+accounts <- data.frame(
+  user = c("alice", "bob"),
+  password = c("alice-login-password", "bob-login-password"),
+  admin = c(TRUE, FALSE),
+  stringsAsFactors = FALSE
+)
+
+shinymanager::create_db(
+  credentials_data = accounts,
+  sqlite_path = "/srv/cerebro/private/credentials.sqlite",
+  passphrase = Sys.getenv("CEREBRO_AUTH_PASSPHRASE")
+)
+rm(accounts)
+```
+
+Build the protected Viewer:
+
+``` r
+# R console — run this to build the login-protected Viewer.
+createShinyApp(
+  cerebro_data = c("My dataset" = "output/cerebro_my_dataset.crb"),
+  result_dir = "/srv/cerebro/apps/my_app",
+  port = 3838,
+  auth = list(
+    credentials = "/srv/cerebro/private/credentials.sqlite",
+    passphrase_env = "CEREBRO_AUTH_PASSPHRASE",
+    timeout_minutes = 15
+  )
+)
+```
+
+Start the Viewer and clear the process variable when finished:
+
+``` r
+# R console — run this to start the generated App locally.
+readRenviron("/srv/cerebro/private/viewer-auth.env")
+shiny::runApp("/srv/cerebro/apps/my_app")
+Sys.unsetenv("CEREBRO_AUTH_PASSPHRASE")
+```
+
+## What goes where
+
+| Item | Correct location | In the App? |
+|----|----|---:|
+| Source `credentials.sqlite` | Private build area | No; a copy is added |
+| External `viewer-auth.env` used by the scripted workflow | Secret store or protected path | No |
+| Export-generated local `viewer-auth.env` | App root with private permissions | Yes; never under `www/` |
+| Generated App | Deployment directory | Yes |
+| Bundled encrypted database | `private-data/auth/` | Yes |
+| Plaintext account table | Trusted R memory only | **Never** |
+
+The runtime account needs only read access to the bundled database. The
+Viewer decrypts its hashed credentials into memory and does not use
+SQLite for runtime state. Login history, database-backed account
+locking, and in-App password changes are intentionally disabled. Update
+accounts or passwords in the private source database, then rebuild and
+redeploy the App.
+
+![The App and external passphrase travel separately and meet only in the
+trusted runtime process.](img/auth-deployment-boundary.svg)
+
+The App and external passphrase travel separately and meet only in the
+trusted runtime process.
+
+## Validation rules
+
+The build stops before publication unless all checks pass:
+
+The names(auth) must be exactly “credentials”, “passphrase_env”, and
+optionally “timeout_minutes”.
+
+- `shinymanager >= 1.1.0` is installed;
+- `auth` has only supported fields;
+- the database is a readable regular SQLite file;
+- the named environment variable exists and is at least 16 characters;
+- `timeout_minutes` is a whole number from 1 to 1440; and
+- the database decrypts and has the expected tables and hashed
+  passwords.
+
+A wrong passphrase never produces a half-configured App.
+
+## Run locally
+
+For an exported App with its matching local `viewer-auth.env`, Linux
+users can run `bash viewer/start-linux.sh` from the App directory. This
+prepares private file permissions and starts Viewer as the current user,
+including after a Windows transfer. For a service account, use
+`sudo bash viewer/start-linux.sh --prepare-only --user shiny` once, then
+start the service normally. Replace `shiny` with the real runtime
+account. The helper does not change secrets or bypass authentication;
+direct R launches still validate permissions without repairing them. See
+the bundled `viewer/AUTHENTICATION-DEPLOYMENT.md` for read-only storage
+and filesystem limitations. Scripted exports using an external
+passphrase still need the external environment setup below.
+
+**Run this as:** the account that will start the App.
+
+**Run it on:** the machine holding the generated App and its matching
+external env file.
+
+**What happens:**
+[`readRenviron()`](https://rdrr.io/r/base/readRenviron.html) places the
+passphrase in this R process; `runApp()` reads it to unlock the bundled
+database and start the login page.
+
+**Verify:** open `http://localhost:3838`, confirm a valid login succeeds
+and an invalid login fails, then stop the R process with Ctrl+C.
+
+Every new R process must load the external secret:
+
+``` r
+# R console — run this in every local App process.
+readRenviron("/srv/cerebro/private/viewer-auth.env")
+shiny::runApp("/srv/cerebro/apps/my_app")
+```
+
+Check one valid and one invalid login in a private browser window.
+Repeat the check on the real HTTPS URL.
+
+## Deploy with Shiny Server and systemd
+
+**Run this as:** the server operator; use elevated privileges only for
+file and service administration.
+
+**Run it on:** the Shiny Server host, not on the build workstation.
+
+**What happens:** the App is installed under the Shiny Server tree,
+while systemd reads the separate env file before starting the service.
+
+**Verify:** inspect service status and logs, then open the real HTTPS
+App URL and test valid and invalid login.
+
+Shiny Server’s SockJS transport cannot carry the raw binary WebSocket
+frames the Viewer sends its plot data in; without a workaround the page
+opens, but plots never arrive. The App detects Shiny Server when it
+starts (Shiny Server sets `SHINY_SERVER_VERSION`) and sends those frames
+as base64 text instead, so an App built on your workstation and copied
+here needs no change. Elsewhere the frames go unchanged. To force the
+choice, put `options(cerebro.sockjs_compat = TRUE)` (or `FALSE`) in a
+`.Rprofile` in the App folder.
+
+Publish the App and secret separately:
+
+For access beyond the local host, use a TLS-terminating reverse proxy in
+front of Shiny Server and expose only its HTTPS endpoint.
+
+``` bash
+# Terminal — run these commands on the Shiny Server host.
+sudo cp -R /srv/cerebro/apps/my_app /srv/shiny-server/
+sudo chown -R shiny:shiny /srv/shiny-server/my_app/private-data/auth
+sudo chmod 0500 /srv/shiny-server/my_app/private-data/auth
+sudo chmod 0400 /srv/shiny-server/my_app/private-data/auth/credentials.sqlite
+
+# Install the external secret at the exact path used by the systemd override.
+sudo install -d -m 0750 /etc/cerebronexus
+sudo install -m 0600 /srv/cerebro/private/viewer-auth.env /etc/cerebronexus/my_app.env
+sudo chown root:root /etc/cerebronexus/my_app.env
+```
+
+Load the secret through a reviewed systemd override:
+
+``` ini
+# systemd override — save this in the editor opened by `sudo systemctl edit shiny-server`.
+[Service]
+EnvironmentFile=/etc/cerebronexus/my_app.env
+```
+
+``` bash
+# Terminal — run these commands after saving the systemd override.
+sudo systemctl daemon-reload
+sudo systemctl restart shiny-server
+```
+
+``` bash
+# Terminal — run these commands to verify the Shiny Server process.
+sudo systemctl status shiny-server
+sudo journalctl -u shiny-server -f
+```
+
+## Run on another machine
+
+**Run this as:** the operator of the destination host.
+
+**Run it on:** the new machine after the App and env file arrive through
+separate encrypted transfer paths.
+
+**What happens:** the destination R process receives the same variable
+name and value used when the App database was built.
+
+**Verify:** test the destination URL before retiring or changing the old
+release.
+
+Transfer the App and secret through separate encrypted channels, then:
+
+``` r
+# R console — run this on the destination host to start the copied App.
+readRenviron("/protected/path/viewer-auth.env")
+shiny::runApp("/srv/cerebronexus/my_app")
+```
+
+Validate login before retiring the old deployment.
+
+## Limit failed sign-ins
+
+**Run this as:** the reverse-proxy administrator.
+
+**Run it on:** the reverse proxy in front of the Viewer.
+
+**What happens:** the proxy limits repeated authentication requests by
+source before they reach Shiny.
+
+**Verify:** exceed the configured request limit from a test client and
+confirm that the proxy rejects further attempts temporarily.
+
+Configure source-aware rate limiting at the reverse proxy. The read-only
+Viewer does not persist failed-login counters or account locks.
+
+The Viewer also slows down guessing in memory: after five failed
+sign-ins for one account or from one client address, that account or
+address waits 30 seconds, doubling with each further failure up to 15
+minutes. The counters are lost when the R process restarts.
+
+Behind a reverse proxy every request comes from the proxy’s address. A
+loopback address (`127.0.0.1`, `::1`) or none at all is never counted as
+a client, so with a proxy on the same host only the per-account limit
+applies.
+
+**A proxy on another host (or a shared NAT or VPN address):** the Viewer
+sees one address that is not loopback for every user and counts it as
+one client. Five failed sign-ins from any users behind that address, for
+example five people each mistyping their own password, then make every
+user behind it wait, including a sixth user with the correct password.
+This is by design: the Viewer cannot tell users apart by an address they
+share. To count each user’s own address instead, set
+`CEREBRO_AUTH_CLIENT_HEADER` as described below
+([`shiny::runApp()`](https://rdrr.io/pkg/shiny/man/runApp.html) behind
+nginx).
+
+**[`shiny::runApp()`](https://rdrr.io/pkg/shiny/man/runApp.html) behind
+nginx or another proxy:** set `CEREBRO_AUTH_CLIENT_HEADER` in the R
+process to the header your proxy sets to the client address, for example
+`X-Forwarded-For` or `X-Real-IP`. The proxy must send it on the
+WebSocket upgrade request too; nginx does when the header is set in the
+same `location` that proxies the WebSocket. The Viewer uses the last
+address in that header, the one the proxy saw. Set it only when every
+request passes through the proxy, because clients can send the header
+themselves.
+
+``` nginx
+# nginx — the location that proxies the Viewer, WebSocket included.
+location / {
+  proxy_pass http://127.0.0.1:3838;
+  proxy_http_version 1.1;
+  proxy_set_header Upgrade $http_upgrade;
+  proxy_set_header Connection "upgrade";
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+```
+
+``` ini
+# systemd override — add next to the passphrase EnvironmentFile.
+[Service]
+Environment=CEREBRO_AUTH_CLIENT_HEADER=X-Forwarded-For
+```
+
+**Shiny Server (open source):** the setting has no effect. Shiny Server
+opens its own WebSocket to the R process and passes on no request
+headers, so the Viewer sees only Shiny Server’s local address and counts
+failures per account. For a per-client limit, run the App with
+[`shiny::runApp()`](https://rdrr.io/pkg/shiny/man/runApp.html) behind
+nginx as above. A rate limit at the proxy (nginx `limit_req` or
+`limit_conn`) caps how many sessions a client opens, not how many
+sign-ins it tries in one session.
+
+## Add, remove, or rotate users
+
+**Run this as:** the credential administrator on the trusted build host.
+
+**Run it on:** the private source-database area, never inside a deployed
+App.
+
+**What happens:** a new database and App release are created; the
+running App is not updated merely because the old source database
+changed.
+
+**Verify:** deploy the new App and matching secret together, test both
+login outcomes, and keep the old pair only for the approved rollback
+window.
+
+Create a new source database, rebuild the App, and deploy the new App
+with its matching secret. Keep the old pair only for the approved
+rollback window.
+
+## Troubleshooting
+
+| Symptom | Action |
+|----|----|
+| No login page | Rebuild with `auth`; confirm the new App was deployed |
+| Missing environment variable | Compare `passphrase_env` with the env-file name |
+| Database cannot decrypt | Load the secret paired with that database |
+| Deployed App stops | Inspect the service environment, not your shell |
+| Database is not accessible | Give the runtime account read and directory traversal access |
+
+## Security checklist
+
+- Use HTTPS.
+- Keep plaintext account tables and all secrets out of Git and public
+  web paths. For this scripted workflow keep the env file outside the
+  App; preserve and protect an export-generated local env file when
+  using that workflow instead.
+- Pair each App release with exactly one matching secret.
+- Verify valid login, invalid login, runtime read access, and rollback.
+- Add monitoring and rate limiting.
+- Generated Apps include a brief offline deployment checklist in
+  `viewer/AUTHENTICATION-DEPLOYMENT.md`.
+
+## See also
+
+- [Create a self-contained Shiny
+  App](https://www.mheming.com/CerebroNexus/articles/create_a_self_contained_shiny_app.md)
+- [Host CerebroNexus on
+  shinyapps.io](https://www.mheming.com/CerebroNexus/articles/host_cerebro_on_shinyapps.md)
+- [`shinymanager::create_db()`](https://datastorm-open.github.io/shinymanager/reference/create_db.html)

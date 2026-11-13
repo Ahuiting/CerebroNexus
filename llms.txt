@@ -1,0 +1,305 @@
+![CerebroNexus logo](reference/figures/logo.png)
+
+**CerebroNexus** (**Ce**ll**Re**port**Bro**wser **Nexus**) is a
+[Shiny](https://shiny.posit.co/) platform for exploring and sharing
+single-cell and spatial transcriptomics data, with gene-expression,
+immune-repertoire, trajectory, and HLA-TCR analyses. See the [full
+documentation](https://www.mheming.com/CerebroNexus/).
+
+[Try the live demo](https://osmzhlab.uni-muenster.de/shiny/demo/).
+
+*CerebroNexus began as a fork of
+[cerebroApp](https://github.com/romanhaa/cerebroApp) by Roman Hillje and
+has since evolved with substantial new features and active development
+by [mihem](https://github.com/mihem) and [Xuesong
+Wang](https://github.com/duocang).*
+
+Automated tests run in a reproducible Nix environment.
+
+  
+
+![CerebroNexus spatial data view](reference/figures/featured.png)
+
+CerebroNexus spatial data view
+
+## 1. Installation
+
+From CRAN:
+
+``` r
+install.packages("CerebroNexus")
+```
+
+The development version from GitHub:
+
+``` r
+remotes::install_github("mihem/CerebroNexus")
+```
+
+The Builder (below) also needs a few suggested packages:
+
+``` r
+install.packages(c("Seurat", "callr", "processx", "ps"))
+```
+
+### Optional packages
+
+Some features use packages that are not installed with CerebroNexus:
+SingleCellExperiment, AnnData and HDF5 input, the immune repertoire and
+HLA pages, gene set enrichment and marker annotation. A feature that
+needs a missing package says which one and how to install it. To install
+all of them at once:
+
+``` r
+install.packages(c(
+  "Seurat", "callr", "processx", "ps", "digest", "readxl", "arrow",
+  "ggplot2", "ggdendro", "patchwork", "igraph", "stringdist", "msigdbr",
+  "httr", "future.apply", "pbapply", "png", "jpeg"
+))
+install.packages("BiocManager")
+BiocManager::install(c(
+  "SingleCellExperiment", "HDF5Array", "rhdf5", "anndataR",
+  "scRepertoire", "GSVA", "qvalue", "biomaRt"
+))
+```
+
+## 2. Build an app for your own data
+
+**Without writing code**, open the Builder in your browser:
+
+``` r
+CerebroNexus::launchCerebroBuilder()
+```
+
+Add your data files, choose the groups and content, and build a `.crb`
+file or a standalone App. See [Build a data set by
+pointing](https://www.mheming.com/CerebroNexus/articles/build_a_data_set_by_pointing.html).
+
+**From a script:**
+
+``` r
+library(CerebroNexus)
+
+# Seurat, SingleCellExperiment, AnnData (.h5ad / .zarr), MuData (.h5mu)
+# or SpatialData
+convertSeuratToCerebro(
+  seurat_file = "my_seurat.rds",
+  result_dir = "output",
+  groups = c("sample", "cluster")
+)
+convertSCEToCerebro(sce, "output", groups = "cluster")
+convertH5adToCerebro("my_data.h5ad", "output", groups = "cell_type")
+convertSpatialDataToCerebro("my_data.zarr", "output", groups = "cell_type")
+
+createShinyApp(
+  cerebro_data = c("My dataset" = "output/cerebro_my_seurat.crb"),
+  result_dir = "my_app"
+)
+```
+
+No Python is needed to read AnnData or SpatialData; see the vignette
+[Use SingleCellExperiment and AnnData
+data](https://www.mheming.com/CerebroNexus/vignettes/use_sce_and_anndata_data.Rmd).
+
+## License
+
+MIT, see
+[LICENSE.md](https://github.com/mihem/CerebroNexus/blob/master/LICENSE.md).
+
+# Package index
+
+## Launch Cerebro
+
+- [`launchCerebro()`](https://www.mheming.com/CerebroNexus/reference/launchCerebro.md)
+  : Launch CerebroNexus
+- [`launchCerebroBuilder()`](https://www.mheming.com/CerebroNexus/reference/launchCerebroBuilder.md)
+  : Build a Cerebro data set from a Seurat object, by pointing and
+  clicking.
+- [`downloadDemoData()`](https://www.mheming.com/CerebroNexus/reference/downloadDemoData.md)
+  : Download the larger demo data sets
+
+## Export data
+
+- [`exportFromSCE()`](https://www.mheming.com/CerebroNexus/reference/exportFromSCE.md)
+  : Export SingleCellExperiment (SCE) object to Cerebro.
+- [`exportFromSeurat()`](https://www.mheming.com/CerebroNexus/reference/exportFromSeurat.md)
+  : Export Seurat object to Cerebro.
+- [`exportToH5ad()`](https://www.mheming.com/CerebroNexus/reference/exportToH5ad.md)
+  : Export a Cerebro file to AnnData (h5ad)
+
+## Convert data
+
+- [`convertCerebro()`](https://www.mheming.com/CerebroNexus/reference/convertCerebro.md)
+  : Convert a Cerebro data file
+- [`convertH5adToCerebro()`](https://www.mheming.com/CerebroNexus/reference/convertH5adToCerebro.md)
+  : Convert an AnnData (h5ad) file to a Cerebro file
+- [`convertSCEToCerebro()`](https://www.mheming.com/CerebroNexus/reference/convertSCEToCerebro.md)
+  : Convert a SingleCellExperiment object to a Cerebro file
+- [`convertSCEToSeurat()`](https://www.mheming.com/CerebroNexus/reference/convertSCEToSeurat.md)
+  : Convert a SingleCellExperiment into a Seurat object
+- [`convertSeuratToCerebro()`](https://www.mheming.com/CerebroNexus/reference/convertSeuratToCerebro.md)
+  : Convert Seurat Object to Cerebro Format
+- [`convertSpatialDataToCerebro()`](https://www.mheming.com/CerebroNexus/reference/convertSpatialDataToCerebro.md)
+  : Convert a SpatialData store to a Cerebro object
+- [`readH5adAsSCE()`](https://www.mheming.com/CerebroNexus/reference/readH5adAsSCE.md)
+  : Read an h5ad file as a SingleCellExperiment
+- [`readSpatialDataAsSCE()`](https://www.mheming.com/CerebroNexus/reference/readSpatialDataAsSCE.md)
+  : Read a SpatialData store as a SingleCellExperiment
+
+## Pre-processing
+
+- [`addPercentMtRibo()`](https://www.mheming.com/CerebroNexus/reference/addPercentMtRibo.md)
+  : Add percentage of mitochondrial and ribosomal transcripts.
+- [`calculatePercentGenes()`](https://www.mheming.com/CerebroNexus/reference/calculatePercentGenes.md)
+  : Calculate percentage of transcripts of gene list.
+- [`getMostExpressedGenes()`](https://www.mheming.com/CerebroNexus/reference/getMostExpressedGenes.md)
+  : Get most expressed genes for specified grouping variables in Seurat
+  object.
+- [`getMarkerGenes()`](https://www.mheming.com/CerebroNexus/reference/getMarkerGenes.md)
+  : Get marker genes for specified grouping variables in Seurat object.
+- [`getEnrichedPathways()`](https://www.mheming.com/CerebroNexus/reference/getEnrichedPathways.md)
+  : Get enriched pathways based on marker genes from EnrichR.
+- [`performGeneSetEnrichmentAnalysis()`](https://www.mheming.com/CerebroNexus/reference/performGeneSetEnrichmentAnalysis.md)
+  : Perform gene set enrichment analysis with GSVA.
+- [`extractMonocleTrajectory()`](https://www.mheming.com/CerebroNexus/reference/extractMonocleTrajectory.md)
+  : Extract trajectory from Monocle and add to Seurat object.
+
+## Internal
+
+- [`Cerebro`](https://www.mheming.com/CerebroNexus/reference/Cerebro.md)
+  : R6 class in which data sets will be stored for visualization in
+  Cerebro.
+- [`addImmuneRepertoire()`](https://www.mheming.com/CerebroNexus/reference/addImmuneRepertoire.md)
+  : Add immune repertoire data to a Seurat object
+- [`addPercentMtRibo()`](https://www.mheming.com/CerebroNexus/reference/addPercentMtRibo.md)
+  : Add percentage of mitochondrial and ribosomal transcripts.
+- [`buildViewerPack()`](https://www.mheming.com/CerebroNexus/reference/buildViewerPack.md)
+  : Build a derived Viewer Pack for an existing CRB
+- [`calculatePercentGenes()`](https://www.mheming.com/CerebroNexus/reference/calculatePercentGenes.md)
+  : Calculate percentage of transcripts of gene list.
+- [`convertCerebro()`](https://www.mheming.com/CerebroNexus/reference/convertCerebro.md)
+  : Convert a Cerebro data file
+- [`convertH5adToCerebro()`](https://www.mheming.com/CerebroNexus/reference/convertH5adToCerebro.md)
+  : Convert an AnnData (h5ad) file to a Cerebro file
+- [`convertSCEToCerebro()`](https://www.mheming.com/CerebroNexus/reference/convertSCEToCerebro.md)
+  : Convert a SingleCellExperiment object to a Cerebro file
+- [`convertSCEToSeurat()`](https://www.mheming.com/CerebroNexus/reference/convertSCEToSeurat.md)
+  : Convert a SingleCellExperiment into a Seurat object
+- [`convertSeuratToCerebro()`](https://www.mheming.com/CerebroNexus/reference/convertSeuratToCerebro.md)
+  : Convert Seurat Object to Cerebro Format
+- [`convertSpatialDataToCerebro()`](https://www.mheming.com/CerebroNexus/reference/convertSpatialDataToCerebro.md)
+  : Convert a SpatialData store to a Cerebro object
+- [`createShinyApp()`](https://www.mheming.com/CerebroNexus/reference/createShinyApp.md)
+  : Create a self-contained CerebroNexus Shiny app folder
+- [`.read_GMT_file()`](https://www.mheming.com/CerebroNexus/reference/dot-read_GMT_file.md)
+  : Read GMT file.
+- [`.send_enrichr_query()`](https://www.mheming.com/CerebroNexus/reference/dot-send_enrichr_query.md)
+  : Gene enrichment using Enrichr.
+- [`downloadDemoData()`](https://www.mheming.com/CerebroNexus/reference/downloadDemoData.md)
+  : Download the larger demo data sets
+- [`exportFromSCE()`](https://www.mheming.com/CerebroNexus/reference/exportFromSCE.md)
+  : Export SingleCellExperiment (SCE) object to Cerebro.
+- [`exportFromSeurat()`](https://www.mheming.com/CerebroNexus/reference/exportFromSeurat.md)
+  : Export Seurat object to Cerebro.
+- [`exportToH5ad()`](https://www.mheming.com/CerebroNexus/reference/exportToH5ad.md)
+  : Export a Cerebro file to AnnData (h5ad)
+- [`extractMonocleTrajectory()`](https://www.mheming.com/CerebroNexus/reference/extractMonocleTrajectory.md)
+  : Extract trajectory from Monocle and add to Seurat object.
+- [`getEnrichedPathways()`](https://www.mheming.com/CerebroNexus/reference/getEnrichedPathways.md)
+  : Get enriched pathways based on marker genes from EnrichR.
+- [`getMarkerGenes()`](https://www.mheming.com/CerebroNexus/reference/getMarkerGenes.md)
+  : Get marker genes for specified grouping variables in Seurat object.
+- [`getMostExpressedGenes()`](https://www.mheming.com/CerebroNexus/reference/getMostExpressedGenes.md)
+  : Get most expressed genes for specified grouping variables in Seurat
+  object.
+- [`hla_normalize_typing()`](https://www.mheming.com/CerebroNexus/reference/hla_normalize_typing.md)
+  : Normalize any accepted HLA input into the canonical long table
+- [`launchCerebro()`](https://www.mheming.com/CerebroNexus/reference/launchCerebro.md)
+  : Launch CerebroNexus
+- [`launchCerebroBuilder()`](https://www.mheming.com/CerebroNexus/reference/launchCerebroBuilder.md)
+  : Build a Cerebro data set from a Seurat object, by pointing and
+  clicking.
+- [`performGeneSetEnrichmentAnalysis()`](https://www.mheming.com/CerebroNexus/reference/performGeneSetEnrichmentAnalysis.md)
+  : Perform gene set enrichment analysis with GSVA.
+- [`readCerebro()`](https://www.mheming.com/CerebroNexus/reference/readCerebro.md)
+  : Read a Cerebro data file
+- [`readH5adAsSCE()`](https://www.mheming.com/CerebroNexus/reference/readH5adAsSCE.md)
+  : Read an h5ad file as a SingleCellExperiment
+- [`readSpatialDataAsSCE()`](https://www.mheming.com/CerebroNexus/reference/readSpatialDataAsSCE.md)
+  : Read a SpatialData store as a SingleCellExperiment
+- [`readViewerPack()`](https://www.mheming.com/CerebroNexus/reference/readViewerPack.md)
+  : Read a valid Viewer Pack descriptor
+- [`saveCerebro()`](https://www.mheming.com/CerebroNexus/reference/saveCerebro.md)
+  : Save a Cerebro data file
+- [`validateViewerPack()`](https://www.mheming.com/CerebroNexus/reference/validateViewerPack.md)
+  : Validate a Viewer Pack
+
+# Articles
+
+### Workflows
+
+- [Introduction to the CerebroNexus workflow
+  (Seurat)](https://www.mheming.com/CerebroNexus/articles/cerebronexus_workflow_seurat.md):
+- [Export a data set in SCE
+  format](https://www.mheming.com/CerebroNexus/articles/export_a_data_set_in_SCE_format.md):
+- [Use SingleCellExperiment and AnnData
+  data](https://www.mheming.com/CerebroNexus/articles/use_sce_and_anndata_data.md):
+
+### Data model
+
+- [Overview of the Cerebro
+  class](https://www.mheming.com/CerebroNexus/articles/overview_of_cerebro_class.md):
+
+### How-to guides
+
+- [Build a data set without writing
+  code](https://www.mheming.com/CerebroNexus/articles/build_a_data_set_by_pointing.md):
+- [Data integrity from Seurat to a self-contained Cerebro
+  app](https://www.mheming.com/CerebroNexus/articles/data_integrity_contracts.md):
+- [Seurat v5 layered assays: complete and safe expression
+  matrices](https://www.mheming.com/CerebroNexus/articles/seurat_v5_layered_assays.md):
+- [Create a self-contained Shiny app from a Cerebro data
+  file](https://www.mheming.com/CerebroNexus/articles/create_a_self_contained_shiny_app.md):
+- [Store the expression matrix in H5
+  format](https://www.mheming.com/CerebroNexus/articles/create_expression_matrix_in_h5_format.md):
+- [Working with large
+  datasets](https://www.mheming.com/CerebroNexus/articles/million_cell_crb_artifacts.md):
+- [Launch Cerebro with pre-loaded data
+  set](https://www.mheming.com/CerebroNexus/articles/launch_cerebro_with_pre-loaded_data_set.md):
+- [Loading multiple data sets (multi-crb) with a dataset
+  switcher](https://www.mheming.com/CerebroNexus/articles/multi_crb.md):
+- [Export and visualize custom tables and
+  plots](https://www.mheming.com/CerebroNexus/articles/export_and_visualize_custom_tables_and_plots.md):
+- [Control access to CerebroNexus with a login
+  page](https://www.mheming.com/CerebroNexus/articles/control_access_to_cerebro_with_a_login_page.md):
+- [Host Cerebro on
+  shinyapps.io](https://www.mheming.com/CerebroNexus/articles/host_cerebro_on_shinyapps.md):
+
+### Benchmarks
+
+- [Large-dataset benchmarks: expression, storage and
+  Viewer](https://www.mheming.com/CerebroNexus/articles/expression_backend_benchmark.md):
+
+### Module guides
+
+- [Most Expressed
+  Genes](https://www.mheming.com/CerebroNexus/articles/most_expressed_genes.md):
+- [Enriched
+  Pathways](https://www.mheming.com/CerebroNexus/articles/enriched_pathways.md):
+- [Extra
+  Material](https://www.mheming.com/CerebroNexus/articles/extra_material.md):
+- [Immune Repertoire Analysis in
+  CerebroNexus](https://www.mheming.com/CerebroNexus/articles/immune_repertoire_analysis.md):
+- [Trajectory
+  Analysis](https://www.mheming.com/CerebroNexus/articles/trajectory_analysis.md):
+- [Spatial Transcriptomics
+  Analysis](https://www.mheming.com/CerebroNexus/articles/spatial_analysis.md):
+- [Trekker single-cell spatial mapping: from a vendor bundle to an
+  interactive
+  app](https://www.mheming.com/CerebroNexus/articles/trekker_spatial_mapping.md):
+- [HLA & TCR Motifs: from synthetic data to an interactive
+  app](https://www.mheming.com/CerebroNexus/articles/hla_tcr_motifs.md):
+- [HLA Associations on bulk TCRβ with real donor
+  HLA](https://www.mheming.com/CerebroNexus/articles/hla_bulk_tcr_associations.md):
+- [A real antigen-selected single-cell TCR demo, end to
+  end](https://www.mheming.com/CerebroNexus/articles/hla_tcr_antigen_selected.md):

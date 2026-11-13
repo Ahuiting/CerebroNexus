@@ -1,0 +1,293 @@
+# Convert Seurat Object to Cerebro Format
+
+This function accepts a Seurat object or reads one from an RDS file,
+optionally renames grouping variables, loads marker gene tables, and
+exports the data to Cerebro format for visualization.
+
+## Usage
+
+``` r
+convertSeuratToCerebro(
+  seurat_file,
+  result_dir,
+  assay = "RNA",
+  slot = "data",
+  experiment_name = "Dura Mater - All Cells",
+  organism = "Human",
+  groups = c("seurat_clusters", "orig.ident", "cell_type_final"),
+  groups_naming = NULL,
+  max_group_levels = 100,
+  nUMI = "nCount_RNA",
+  nGene = "nFeature_RNA",
+  add_all_meta_data = TRUE,
+  use_delayed_array = FALSE,
+  expression_matrix_mode = c("embedded", "h5"),
+  codec = c("qs2", "rds"),
+  spatial_images = NULL,
+  verbose = TRUE,
+  cell_cycle = NULL,
+  marker_file = NULL,
+  marker_method = "Diff. Expression",
+  add_most_expressed_genes = TRUE,
+  most_expressed_genes = NULL,
+  bcr_file = NULL,
+  tcr_file = NULL,
+  h5_compression_level = 0L,
+  immune_sidecar = c("auto", "always", "never"),
+  immune_sidecar_threshold = 100000L
+)
+```
+
+## Arguments
+
+- seurat_file:
+
+  A Seurat object in memory, or a character string specifying its `.rds`
+  file path.
+
+- result_dir:
+
+  Character string specifying the directory where the Cerebro output
+  file (.crb) will be saved.
+
+- assay:
+
+  Character string specifying which assay to use from the Seurat object;
+  default: `"RNA"`.
+
+- slot:
+
+  Character string specifying which slot to extract expression data from
+  (e.g., "data", "counts", "scale.data"); default: `"data"`.
+
+- experiment_name:
+
+  Character string for the experiment name to be stored in the Cerebro
+  object; default: `"Dura Mater - All Cells"`.
+
+- organism:
+
+  Character string specifying the organism (e.g., "Human", "Mouse");
+  default: `"Human"`.
+
+- groups:
+
+  Character vector of column names in the Seurat metadata to use as
+  grouping variables; default:
+  `c("seurat_clusters", "orig.ident", "cell_type_final")`.
+
+- groups_naming:
+
+  Named list for renaming grouping variables. Names are the old column
+  names, values are the new names; default: `NULL`.
+
+- max_group_levels:
+
+  Numeric value specifying the maximum number of unique levels allowed
+  in a grouping variable. Groups with more unique values than this
+  threshold will be excluded; default: `100`.
+
+- nUMI:
+
+  Character string specifying the column name in metadata containing the
+  number of UMIs per cell; default: `"nCount_RNA"`.
+
+- nGene:
+
+  Character string specifying the column name in metadata containing the
+  number of expressed genes per cell; default: `"nFeature_RNA"`.
+
+- add_all_meta_data:
+
+  Logical indicating whether to include all metadata columns in the
+  export; default: `TRUE`.
+
+- use_delayed_array:
+
+  Logical indicating whether to convert expression data to DelayedArray
+  format for memory efficiency; default: `FALSE`. Ignored when
+  `expression_matrix_mode` is set to an external backend.
+
+- expression_matrix_mode:
+
+  How to persist the expression matrix in the generated `.crb`. One of
+  `"embedded"` (default) or `"h5"`. See
+  [`exportFromSeurat`](https://www.mheming.com/CerebroNexus/reference/exportFromSeurat.md)
+  for details; briefly, `"embedded"` stores the matrix inside the
+  `.crb`, and `"h5"` writes a TENx-format HDF5 file next to the `.crb`
+  that the Viewer loads lazily, minimising RAM and startup time
+  (recommended for large datasets). The Viewer finds the file relative
+  to the `.crb`'s parent directory, so packaging the `.crb` with its
+  sibling `<stem>.h5` together is enough for portable deployment.
+
+- codec:
+
+  Serialization codec for the CRB payload. Defaults to `"qs2"`; use
+  `"rds"` when direct compatibility with
+  [`readRDS()`](https://rdrr.io/r/base/readRDS.html) is required.
+
+- spatial_images:
+
+  Optional manifest in `spatial entry -> image label -> path` form.
+  Spatial-entry names must match `SeuratObject::Images(seurat_file)`.
+  Each entry may contain one or more arbitrarily named PNG, JPEG/JPG, or
+  SVG files. A named character vector is path shorthand; a leaf may
+  instead be
+  `list(path = ..., bounds = c(xmin = ..., xmax = ..., ymin = ..., ymax = ...))`.
+  Missing bounds are derived from the exported coordinates. Supplied
+  images are embedded in the generated CRB; existing embedded images
+  declared by the Seurat object are retained.
+
+- verbose:
+
+  Logical indicating whether to print progress messages; default:
+  `TRUE`.
+
+- cell_cycle:
+
+  Character vector of column names in metadata containing cell cycle
+  phase assignments; default: `NULL`.
+
+- marker_file:
+
+  Character string specifying the path to a marker gene table file.
+  Supported formats: .csv, .tsv, .txt, .tab; default: `NULL`.
+
+- marker_method:
+
+  Character string specifying the name of the method used to identify
+  marker genes (will be used as a label in Cerebro); default:
+  `"Diff. Expression"`.
+
+- add_most_expressed_genes:
+
+  Logical indicating whether to calculate the most expressed genes for
+  each group; default: `TRUE`.
+
+- most_expressed_genes:
+
+  Optional pre-calculated most expressed genes data. Can be either a
+  data.frame (will be converted to list(unknown = ...)) or a list of
+  data.frames. If list elements are unnamed, they will be assigned names
+  like "unknown1", "unknown2", etc.; default: `NULL`.
+
+- bcr_file:
+
+  Character string specifying the path to a BCR data file (.rds format).
+  The data will be merged into the unified `immune_repertoire` slot of
+  the Seurat object before export; default: `NULL`.
+
+- tcr_file:
+
+  Character string specifying the path to a TCR data file (.rds format).
+  The data will be merged into the unified `immune_repertoire` slot of
+  the Seurat object before export; default: `NULL`.
+
+- h5_compression_level, immune_sidecar, immune_sidecar_threshold:
+
+  Passed to
+  [`exportFromSeurat`](https://www.mheming.com/CerebroNexus/reference/exportFromSeurat.md):
+  the gzip level of the H5 file (default 0, uncompressed), and whether
+  and from which size the immune repertoire is stored in a sibling file.
+
+## Value
+
+This function does not return a value. It saves a Cerebro object (.crb
+file) to the specified `result_dir`.
+
+## Details
+
+The function performs the following steps:
+
+1.  Reads the Seurat object from `seurat_file`
+
+2.  Renames grouping columns if `groups_naming` is provided
+
+3.  Loads marker gene tables from `marker_file` if provided:
+
+    - For Excel files with multiple sheets, each sheet becomes a
+      separate group
+
+    - For single-sheet files, data is split by the first column
+
+4.  Exports the processed data using
+    [`exportFromSeurat`](https://www.mheming.com/CerebroNexus/reference/exportFromSeurat.md)
+
+5.  Saves the result as `cerebro_<basename>.crb` in `result_dir`
+
+6.  Cleans up memory by removing the Seurat object and calling garbage
+    collection
+
+Seurat uses the same named image collection for several
+platform-specific structures: a name can identify a Visium slice, Xenium
+or MERFISH field of view (FOV), or another Seurat v5 spatial image. It
+is a structural spatial-entry key, not necessarily a donor or sample
+name. An entry can carry multiple user-named backgrounds, or coordinates
+only. Seurat v4 `VisiumV1` images are rejected with guidance to rebuild
+them as `VisiumV2` images.
+
+## See also
+
+[`exportFromSeurat`](https://www.mheming.com/CerebroNexus/reference/exportFromSeurat.md)
+
+## Examples
+
+``` r
+# \donttest{
+input_dir <- system.file("extdata/examples", package = "CerebroNexus")
+result_dir <- file.path(tempdir(), "output")
+convertSeuratToCerebro(
+  seurat_file = file.path(input_dir, "pbmc_seurat.rds"),
+  result_dir = result_dir,
+  assay = "RNA",
+  slot = "data",
+  experiment_name = "PBMC example",
+  organism = "Human",
+  groups = c("sample", "seurat_clusters"),
+  groups_naming = list("seurat_clusters" = "cluster")
+)
+#> [13:58:33] Calculating most expressed genes and mean expression for each group...
+#> [13:58:33] Processing group: sample
+#> [13:58:33] Processing group: cluster
+#> [13:58:33] Most expressed genes and mean expression calculation completed.
+#> [INFO] No scRepertoire columns found in metadata, skipping repertoire extraction.
+#> [INFO] No immune repertoire data to add; object returned unchanged.
+#> [13:58:33] Initializing Cerebro object...
+#> [13:58:33] Adding expression data (embedded)...
+#> [13:58:33] Collecting available meta data...
+#> [13:58:33] Extracting all meta data columns...
+#> [13:58:33] Extracting dimensional reductions...
+#> [13:58:33] Will export the following dimensional reductions: umap
+#> [13:58:33] Extracting tables of most expressed genes...
+#> [13:58:33] Extracting tables of mean expression...
+#> [13:58:33] Extracting marker genes table...
+#> [13:58:33] No trajectories to extract...
+#> [13:58:33] Checking for spatial data...
+#> [13:58:33] Overview of Cerebro object:
+#> class: Cerebro
+#> exporter package version: 8.0.1
+#> experiment name: PBMC example
+#> organism: Human
+#> date of analysis: 
+#> date of export: 2026-11-13
+#> number of cells: 80
+#> number of genes: 230
+#> grouping variables (2): sample, cluster
+#> cell cycle variables (0): 
+#> projections (1): umap
+#> trees (0): 
+#> most expressed genes: sample, cluster
+#> marker genes:
+#>   - cerebro_seurat (1): seurat_clusters
+#> enriched pathways:
+#> trajectories:
+#> extra material:
+#> Immune repertoire:
+#> HLA typing: none
+#> Spatial data:
+#> [13:58:33] Saving Cerebro object to: /tmp/nix-shell-4505-601385438/Rtmp5cjkZm/output/cerebro_pbmc_seurat.crb
+#> [13:58:33] Done!
+#> Successfully exported: cerebro_pbmc_seurat.crb
+# Creates cerebro_pbmc_seurat.crb in result_dir.
+# }
+```

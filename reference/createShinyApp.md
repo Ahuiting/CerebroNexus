@@ -1,0 +1,364 @@
+# Create a self-contained CerebroNexus Shiny app folder
+
+Bundles a CerebroNexus Shiny app into `result_dir`, copying the
+`inst/viewer/` sources, the requested `.crb` data file(s), and
+`extdata/`, and writes an `app.R` that sources the bundled UI/server.
+The output directory can be served directly by shiny-server or run with
+`shiny::runApp(result_dir)`.
+
+## Usage
+
+``` r
+createShinyApp(
+  cerebro_data,
+  result_dir = NULL,
+  max_request_size = 8000,
+  port = 8080,
+  host = "127.0.0.1",
+  launch_browser = TRUE,
+  quiet = FALSE,
+  display_mode = "normal",
+  colors = NULL,
+  cerebro_options = list(exclude_trivial_metadata = TRUE),
+  overwrite = TRUE,
+  verbose = TRUE,
+  crb_pick_smallest_file = TRUE,
+  show_upload_ui = FALSE,
+  welcome_message = "Welcome to CerebroNexus!",
+  point_size = 5,
+  point_opacity = 1,
+  percentage_cells_to_show = 100,
+  variable_to_compare = NULL,
+  spatial_images = NULL,
+  spatial_image_settings = NULL,
+  spatial_plot_rotation = NULL,
+  auth = NULL,
+  extra_tables = NULL,
+  extra_tables_sheets = NULL,
+  dataset_labels = NULL,
+  initial_dataset = NULL,
+  initial_page = NULL,
+  initial_projections = NULL,
+  spatial_point_appearance = NULL,
+  spatial_roi_settings = NULL,
+  spatial_percentage_cells_to_show = 100
+)
+```
+
+## Arguments
+
+- cerebro_data:
+
+  Non-empty named character vector or list of `.crb` (or `.rds`) file
+  paths. Names must be non-missing and unique and are used as stable
+  dataset identities. Paths must resolve to distinct files.
+
+- result_dir:
+
+  Output directory. Its basename must be portable, its path must not use
+  the reserved build-lock namespace, and its final target must not be a
+  symbolic link or unresolved filesystem entry.
+
+- max_request_size:
+
+  One finite positive numeric upload limit in MB; defaults to 8000.
+  Closed Viewers cap the effective request size at 6 MB; open Viewers
+  use the supplied value.
+
+- port:
+
+  One whole-number port from 1 through 65535; defaults to 8080.
+
+- host:
+
+  One non-empty character value that the generated app binds to;
+  defaults to "127.0.0.1".
+
+- launch_browser:
+
+  One non-missing logical controlling whether to launch a browser;
+  defaults to TRUE.
+
+- quiet:
+
+  One non-missing logical passed to
+  [`shiny::runApp`](https://rdrr.io/pkg/shiny/man/runApp.html); defaults
+  to FALSE.
+
+- display_mode:
+
+  Exactly one of `"auto"`, `"normal"`, or `"showcase"`; defaults to
+  `"normal"`.
+
+- colors:
+
+  Optional named list of colour palettes per dataset.
+
+- cerebro_options:
+
+  Extra entries merged into `Cerebro.options` in the generated app.
+  Duplicate internal entries are removed, and the keys
+  `.bundle_backend_plan` and `.bundle_run_options` are written by the
+  function.
+
+- overwrite:
+
+  If `TRUE` (default), replace `result_dir` only after a complete staged
+  build succeeds. Publication failures attempt to restore the previous
+  app and preserve its backup if restoration fails. If `FALSE`,
+  `result_dir` must be absent or empty; a non-empty directory is
+  rejected before any files are written.
+
+- verbose:
+
+  Print progress messages; defaults to TRUE.
+
+- crb_pick_smallest_file:
+
+  Forwarded to `Cerebro.options`.
+
+- show_upload_ui:
+
+  One non-missing logical controlling whether users may upload their own
+  data; defaults to `FALSE`.
+
+- welcome_message:
+
+  Welcome message shown in the Load Data tab.
+
+- point_size:
+
+  Point size from 1 through 20. Supply one number for every dataset, or
+  a named numeric vector/list whose names exactly match `cerebro_data`.
+  Applies across ordinary projection views, including Gene expression
+  and Linked views; Spatial is configured independently.
+
+- point_opacity:
+
+  Point opacity from 0.1 through 1. Supply one number for every dataset,
+  or a named numeric vector/list whose names exactly match
+  `cerebro_data`. Applies across ordinary projection views, including
+  Gene expression and Linked views; Spatial is configured independently.
+
+- percentage_cells_to_show:
+
+  Percentage of cells from 10 through 100. Supply one number for every
+  dataset, or a named numeric vector/list whose names exactly match
+  `cerebro_data`. The value initializes every cell projection view.
+  Viewer edits are shared by projection pages for the current dataset;
+  Spatial uses its own coordinate settings.
+
+- variable_to_compare:
+
+  Forwarded to `Cerebro.options`.
+
+- spatial_images:
+
+  Optional nested external-image manifest in
+  `dataset -> spatial entry -> image label -> path` form. Dataset names
+  must match `cerebro_data`; spatial names must match the corresponding
+  CRB's `availableSpatial()`, and image labels must be unique and
+  non-empty within an entry. A leaf may instead be a descriptor
+  containing `path` and optional coordinate `bounds`. Supplied files are
+  copied to opaque, safe relative paths under `spatial-assets/`. A plain
+  `c(Dataset = path)` vector is rejected; write
+  `list(Dataset = list(<spatial entry> = c(label = path)))`.
+
+- spatial_image_settings:
+
+  Optional nested settings in
+  `dataset -> spatial entry -> image label -> settings` form. Settings
+  may contain only `flip_x`, `flip_y`, `scale_x`, `scale_y`, `offset_x`,
+  `offset_y`, and `rotation`. `image_opacity` may additionally set the
+  initial image opacity from 0 through 1 (default 1). A leaf may target
+  an embedded or external image available under that exact dataset and
+  spatial entry. The image label must exist in the union of the CRB's
+  embedded images and this call's `spatial_images`; unknown identities
+  are rejected. Labels are user-facing names, not protocol names.
+
+- spatial_plot_rotation:
+
+  Optional nested rotations in `dataset -> spatial entry -> degrees`
+  form, applied only to spatial cell coordinates. Dataset names must
+  match `cerebro_data`; spatial names must match the corresponding CRB's
+  `availableSpatial()`. A per-dataset numeric vector is rejected.
+
+- auth:
+
+  Optional authentication settings. `NULL`, the default, leaves the
+  generated Viewer public. To require a login, provide a named list with
+  `credentials`, the path to an encrypted SQLite database created by
+  [`shinymanager::create_db()`](https://rdrr.io/pkg/shinymanager/man/create_db.html),
+  and `passphrase_env`, the name of the environment variable containing
+  its passphrase. Optional `timeout_minutes` defaults to 15.
+
+- extra_tables:
+
+  Optional named collection of CSV, TSV, TXT, XLS, XLSX, or XLSM files
+  to bundle as private Extra material tables. Workbook sheets are listed
+  separately and loaded only when selected in the Viewer.
+
+- extra_tables_sheets:
+
+  Optional named list of Excel sheet renames keyed by `extra_tables`
+  labels. Each entry maps displayed names to source sheet names;
+  unmapped sheets remain available.
+
+- dataset_labels:
+
+  Optional named character vector mapping every dataset identity in
+  `cerebro_data` to its display label. Values must be non-empty but may
+  repeat. When omitted, the dataset identities are also used as display
+  labels.
+
+- initial_dataset:
+
+  Optional exact dataset identity to load initially. This does not
+  change the order of `cerebro_data`. URL selection and a session's
+  current selection take precedence.
+
+- initial_page:
+
+  Optional initial Viewer page. Supported stable IDs are `"data_info"`,
+  `"projection"`, `"linked_views"`, `"groups"`, `"marker_genes"`,
+  `"most_expressed_genes"`, `"enriched_pathways"`, `"extra_material"`,
+  `"immune_repertoire"`, `"trajectory"`, `"spatial"`, `"trekker"`,
+  `"hla_tcr_motifs"`, `"gene_expression"`, `"gene_id_conversion"`,
+  `"color_management"`, and `"about"`. A conditional page is selected
+  only when it is available for the first loaded dataset. Initial
+  routing is attempted only once, so switching datasets later never
+  triggers a delayed redirect. Shared links take precedence after
+  restoration.
+
+- initial_projections:
+
+  Optional projection names to show when Linked views first opens. A
+  character vector applies to every data set. A named list configures
+  individual `cerebro_data` labels; omitted labels keep the Viewer's
+  default single-projection behavior.
+
+- spatial_point_appearance:
+
+  Optional named list in
+  `dataset -> FOV -> list(point_size, point_opacity)` form. Point size
+  is from 1 to 20 and opacity from 0 to 1. Used by Spatial and spatial
+  panels in Linked views, independently of projection appearance.
+
+- spatial_roi_settings:
+
+  Optional named list in
+  `dataset -> FOV -> ROI -> list(rotation_degrees, point_size, point_opacity)`
+  form, matching Builder Coordinate settings. Rotation is a Viewer
+  rotation after any coordinate transform baked into the exported CRB.
+
+- spatial_percentage_cells_to_show:
+
+  Independent spatial sampling percentage from 10 to 100; one number or
+  a numeric vector named by dataset. Defaults to 100.
+
+## Value
+
+Invisibly returns `result_dir`. If that path changes resolution during
+the build, warns and returns the frozen absolute publication path.
+
+## Details
+
+Supports the external H5 expression backend in addition to the embedded
+mode. Each `.crb` descriptor names a portable relative file, and so does
+an immune repertoire sidecar; both are copied to the same private
+location under `private-data/`. The historical `data/` name is
+deliberately not reused: a still-running older generated app may retain
+its former `/data` HTTP resource mapping during an in-place replacement.
+Raw `.crb`, H5, and sidecar files are not registered as HTTP resources.
+Spatial background images are the deliberate exception: files explicitly
+supplied through `spatial_images` are copied verbatim under
+`spatial-assets/`. The server exposes each selected file through a
+private, session-scoped URL; image bytes are not Base64-encoded and the
+directory is not registered as a public HTTP resource. Callers must
+provide trusted image files. Preflight requires a minimum stable runtime
+API and reads the ordinary `expression_backend` field without invoking
+serialized methods or its getter. The generated configuration stores the
+effective per-CRB attachment plan, and configured CRBs consume that
+exact plan at runtime. Direct launches and uploads also read and
+validate the ordinary field without invoking the getter. A CRB from an
+older release that is no longer read (see
+[`convertCerebro`](https://www.mheming.com/CerebroNexus/reference/convertCerebro.md))
+is rejected, as is an object containing only one of field and getter.
+Dataset labels are unique. Two labels may name the same input file; the
+bundle then holds one copy of it per label. While developing the
+package, the environment variable `CEREBRO_PACKAGE_SOURCE` may name a
+source checkout (a directory with `DESCRIPTION` for
+`Package: CerebroNexus`, `R/` and `inst/`); the Viewer files and the
+version written into the bundle then come from it instead of from the
+installed package. Any other directory is ignored. Generated bundles
+follow the standard deployment model of one app per R process;
+process-global `Cerebro.options` does not provide same-process isolation
+between separately sourced apps.
+
+Launch settings are validated and frozen in a typed internal manifest
+before target preparation. The generated `app.R` reads that manifest
+instead of interpolating user values into source, and the staged source
+is parsed before publication. The upload limit is installed as
+`shiny.maxRequestSize` while the app is running and the previous process
+option is restored when the app stops.
+
+Treat input `.crb`/`.rds` files as trusted serialized R objects;
+structural validation is not a sandbox for untrusted RDS input.
+
+One atomic sibling lock directory, `.<basename>-build.lock`, serializes
+builds for each target. An existing lock stops the build and is never
+removed automatically as "stale". Required inputs and targets are
+validated before the app is assembled in a private sibling stage.
+Preflight and stage-build failures leave an existing deployment in
+place. Publication first renames the old app to a unique backup; if the
+final rename fails, restoration is attempted. A failed restoration keeps
+the backup and reports its exact path. Abrupt process death between the
+two publication renames is not recovered automatically and can leave
+`result_dir` temporarily absent. After confirming that the lock owner is
+no longer running, verify and restore the correct backup before removing
+any leftover stage and lock. On POSIX systems, the stage is mode `0700`
+while data is copied, and replacement retains the existing deployment
+root's permission bits. Platform-specific ACLs, ownership changes, and
+security labels remain the deployment system's responsibility. All CRBs,
+descriptor sidecars, spatial images and their source-path ancestors must
+remain trusted and unchanged while the build is running; the target
+build lock does not protect inputs.
+
+## Examples
+
+``` r
+# \donttest{
+app_dir <- createShinyApp(
+  cerebro_data = c(
+    "PBMC example" = system.file("extdata/examples/example.crb",
+      package = "CerebroNexus")
+  ),
+  result_dir = file.path(tempdir(), "my_app"),
+  port = 8080,
+  host = "127.0.0.1",
+  max_request_size = 8000,
+  overwrite = TRUE
+)
+#> Creating staged directory structure...
+#> Copying Shiny source files...
+#> Copying data artifacts...
+#>   - private-data/example.crb (Cerebro data file)
+#> Copying extdata files...
+#> Generating app.R file...
+#> 
+#> ========================================
+#> Shiny app successfully created!
+#> ========================================
+#> App directory: /tmp/nix-shell-4505-601385438/Rtmp5cjkZm/my_app
+#> Data file(s):
+#>   - PBMC example : example.crb
+#> Port: 8080
+#> Host: 127.0.0.1
+#> Launch browser: TRUE
+#> 
+#> To launch the app, run:
+#>   shiny::runApp('/tmp/nix-shell-4505-601385438/Rtmp5cjkZm/my_app')
+#> ========================================
+# Run with shiny::runApp(app_dir) or deploy the directory to Shiny Server.
+# }
+```
