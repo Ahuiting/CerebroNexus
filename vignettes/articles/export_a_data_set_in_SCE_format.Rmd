@@ -25,12 +25,12 @@ knitr::opts_chunk$set(
 
 Here, I explain how one can export a data set stored in the [`SingleCellExperiment`/`SCE`](https://bioconductor.org/packages/release/bioc/html/SingleCellExperiment.html) format to visualize it in Cerebro.
 
-The workflow used here is loosely put together from the [`scran`](https://bioconductor.org/packages/release/bioc/vignettes/scran/inst/doc/scran.html) and [`scater`](https://bioconductor.org/packages/3.11/bioc/vignettes/scater/inst/doc/overview.html) examples.
+The workflow used here is loosely put together from the [`scran`](https://bioconductor.org/packages/release/bioc/vignettes/scran/inst/doc/scran.html) and [`scater`](https://bioconductor.org/packages/release/bioc/vignettes/scater/inst/doc/overview.html) examples.
 Do not use this workflow as a reference for how to properly process your data.
 
 # Installation
 
-Before starting the workflow, install `CerebroNexus`, as well as the [`scran`](https://bioconductor.org/packages/release/bioc/html/scran.html), [`scater`](https://bioconductor.org/packages/3.11/bioc/html/scater.html) and [`SingleR`](https://www.bioconductor.org/packages/release/bioc/html/SingleR.html) packages. The latter packages are only needed for pre-processing scRNA-seq data.
+Before starting the workflow, install `CerebroNexus`, as well as the [`scran`](https://bioconductor.org/packages/release/bioc/html/scran.html), [`scater`](https://bioconductor.org/packages/release/bioc/html/scater.html) and [`SingleR`](https://www.bioconductor.org/packages/release/bioc/html/SingleR.html) packages. The latter packages are only needed for pre-processing scRNA-seq data.
 If you just want to launch the Cerebro user interface, e.g. because you already have the pre-processed data, you don't need those packages.
 
 ```{r installation, message=FALSE, warning=FALSE, eval=FALSE}
@@ -38,10 +38,12 @@ if ( 'BiocManager' %in% installed.packages() == FALSE ) install.packages('BiocMa
 
 library(BiocManager)
 
+if ( 'remotes' %in% installed.packages() == FALSE ) install.packages('remotes')
 if ( !'CerebroNexus' %in% rownames(installed.packages()) ) remotes::install_github('mihem/CerebroNexus')
 if ( 'scran' %in% installed.packages() == FALSE ) install('scran')
 if ( 'scater' %in% installed.packages() == FALSE ) install('scater')
 if ( 'SingleR' %in% installed.packages() == FALSE ) install('SingleR')
+if ( 'celldex' %in% installed.packages() == FALSE ) install('celldex')
 if ( 'monocle' %in% installed.packages() == FALSE ) install('monocle')
 ```
 
@@ -166,7 +168,7 @@ sce@metadata$technical_info$CerebroNexus_version <- utils::packageVersion('Cereb
 sce@metadata$technical_info$scran <- utils::packageVersion('scran')
 sce@metadata$technical_info$scater <- utils::packageVersion('scater')
 sce@metadata$technical_info <- list(
-  'R' = capture.output(devtools::session_info())
+  'R' = capture.output(sessionInfo())
 )
 ```
 
@@ -176,7 +178,7 @@ Using the [`SingleR`](https://www.bioconductor.org/packages/release/bioc/html/Si
 Apart from the suggested cell type, we also extract the score that might help us to understand how confident the assignment was.
 
 ```{r cell_type_assignment, eval=FALSE}
-singler_ref <- BlueprintEncodeData()
+singler_ref <- celldex::BlueprintEncodeData()
 
 singler_results_blueprintencode_main <- SingleR(
   test = logcounts(sce),
@@ -282,7 +284,7 @@ exportFromSCE(
 )
 ```
 
-The Cerebro use interface can be launched using the `launchCerebro()` function.
+The Cerebro user interface can be launched using the `launchCerebro()` function.
 
 # Session info
 

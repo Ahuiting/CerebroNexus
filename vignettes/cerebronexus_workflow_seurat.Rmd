@@ -47,9 +47,11 @@ if ( 'BiocManager' %in% installed.packages() == FALSE ) install.packages('BiocMa
 
 library(BiocManager)
 
+if ( 'remotes' %in% installed.packages() == FALSE ) install.packages('remotes')
 if ( !'CerebroNexus' %in% rownames(installed.packages()) ) remotes::install_github('mihem/CerebroNexus')
 if ( 'Seurat' %in% installed.packages() == FALSE ) install('Seurat')
 if ( 'SingleR' %in% installed.packages() == FALSE ) install('SingleR')
+if ( 'celldex' %in% installed.packages() == FALSE ) install('celldex')
 if ( 'monocle' %in% installed.packages() == FALSE ) install('monocle')
 ```
 
@@ -101,7 +103,7 @@ seurat <- subset(seurat, subset = nCount_RNA >= 50 & nFeature_RNA >= 10)
 seurat <- NormalizeData(seurat, verbose = FALSE)
 seurat <- FindVariableFeatures(seurat, verbose = FALSE)
 seurat <- ScaleData(seurat, vars.to.regress = 'nCount_RNA', verbose = FALSE)
-seurat <- RunPCA(seurat, features = seurat@assays$RNA@var.features, verbose = FALSE)
+seurat <- RunPCA(seurat, features = VariableFeatures(seurat), verbose = FALSE)
 ```
 
 # Clustering
@@ -191,7 +193,7 @@ seurat@misc$parameters$filtering <- list(
 seurat@misc$technical_info$CerebroNexus_version <- utils::packageVersion('CerebroNexus')
 seurat@misc$technical_info$Seurat <- utils::packageVersion('Seurat')
 seurat@misc$technical_info <- list(
-  'R' = capture.output(devtools::session_info())
+  'R' = capture.output(sessionInfo())
 )
 ```
 
@@ -201,10 +203,10 @@ Using the [`SingleR`](https://www.bioconductor.org/packages/release/bioc/html/Si
 Apart from the suggested cell type, we also extract the score that might help us to understand how confident the assignment was.
 
 ```{r cell_type_assignment, eval=FALSE}
-singler_ref <- BlueprintEncodeData()
+singler_ref <- celldex::BlueprintEncodeData()
 
 singler_results_blueprintencode_main <- SingleR(
-  test = GetAssayData(seurat, assay = 'RNA', slot = 'data'),
+  test = GetAssayData(seurat, assay = 'RNA', layer = 'data'),
   ref = singler_ref,
   labels = singler_ref@colData@listData$label.main
 )
@@ -336,17 +338,19 @@ Then, we perform trajectory analysis with [Monocle v2](https://cole-trapnell-lab
 We extract the trajectory from the generated Monocle object with the CerebroNexus `extractMonocleTrajectory()` function and attach it to our Seurat object.
 
 ```{r analysis_with_monocle, eval=FALSE}
+counts <- LayerData(seurat, assay = 'RNA', layer = 'counts')
+
 monocle <- newCellDataSet(
-  seurat@assays$RNA@counts,
+  counts,
   phenoData = new('AnnotatedDataFrame', data = seurat@meta.data),
   featureData = new('AnnotatedDataFrame', data = data.frame(
-    gene_short_name = rownames(seurat@assays$RNA@counts),
-    row.names = rownames(seurat@assays$RNA@counts))
+    gene_short_name = rownames(counts),
+    row.names = rownames(counts))
   )
 )
 
 monocle <- estimateSizeFactors(monocle)
-monocle <- setOrderingFilter(monocle, seurat@assays$RNA@var.features)
+monocle <- setOrderingFilter(monocle, VariableFeatures(seurat))
 monocle <- reduceDimension(monocle, max_components = 2, method = 'DDRTree')
 monocle <- orderCells(monocle)
 
@@ -375,7 +379,7 @@ exportFromSeurat(
 
 By default the expression matrix is embedded in the `.crb`. For large data sets, add `expression_matrix_mode = "h5"` to write the matrix to a sibling `.h5` file instead (the only other storage mode); keep the two files together. A very large immune repertoire is moved to a third sibling file (`immune_sidecar = "auto"`). See [Store the expression matrix in H5 format](https://www.mheming.com/CerebroNexus/articles/create_expression_matrix_in_h5_format.html).
 
-The Cerebro use interface can be launched using the `launchCerebro()` function.
+The Cerebro user interface can be launched using the `launchCerebro()` function.
 
 # See also
 
