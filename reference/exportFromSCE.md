@@ -18,7 +18,7 @@ exportFromSCE(
   nGene = "nGene",
   add_all_meta_data = TRUE,
   use_delayed_array = FALSE,
-  expression_matrix_mode = c("embedded", "h5"),
+  expression_matrix_mode = c("auto", "embedded", "h5"),
   codec = c("qs2", "rds"),
   viewer_binary = c("auto", "always", "never"),
   viewer_binary_threshold = 100000L,
@@ -99,7 +99,8 @@ exportFromSCE(
 
 - expression_matrix_mode:
 
-  How to persist the expression matrix. One of `"embedded"` (default) or
+  How to persist the expression matrix. One of `"auto"` (default: `"h5"`
+  for more than 200,000 cells, `"embedded"` otherwise), `"embedded"` or
   `"h5"`; identical to
   [`exportFromSeurat`](https://www.mheming.com/CerebroNexus/reference/exportFromSeurat.md).
   The `"h5"` backend writes a sibling `<stem>.h5` file next to the
@@ -191,20 +192,21 @@ exportFromSCE(
   use_delayed_array = FALSE,
   verbose = TRUE
 )
-#> [22:43:00] Initializing Cerebro object...
-#> [22:43:00] Adding expression data (embedded)...
-#> [22:43:00] Collecting available meta data...
-#> [22:43:00] Extracting all meta data columns...
-#> [22:43:00] Extracting dimensional reductions...
-#> [22:43:00] Will export the following dimensional reductions: UMAP
-#> [22:43:00] No trajectories to extract...
-#> [22:43:00] Overview of Cerebro object:
+#> [14:45:03] expression_matrix_mode = "auto": 80 cells, so "embedded".
+#> [14:45:03] Initializing Cerebro object...
+#> [14:45:03] Adding expression data (embedded)...
+#> [14:45:03] Collecting available meta data...
+#> [14:45:03] Extracting all meta data columns...
+#> [14:45:03] Extracting dimensional reductions...
+#> [14:45:03] Will export the following dimensional reductions: UMAP
+#> [14:45:03] No trajectories to extract...
+#> [14:45:03] Overview of Cerebro object:
 #> class: Cerebro
-#> exporter package version: 8.4.0
+#> exporter package version: 8.4.10
 #> experiment name: PBMC
 #> organism: hg
 #> date of analysis: 
-#> date of export: 2026-11-16
+#> date of export: 2026-11-24
 #> number of cells: 80
 #> number of genes: 230
 #> grouping variables (2): sample, cluster
@@ -219,7 +221,7 @@ exportFromSCE(
 #> Immune repertoire:
 #> HLA typing: none
 #> Spatial data:
-#> [22:43:00] Saving Cerebro object to: /tmp/nix-shell-4521-2581468507/RtmpgeaiU4/pbmc_SCE.crb
-#> [22:43:00] Done!
+#> [14:45:03] Saving Cerebro object to: /tmp/nix-shell-4235-3041636200/RtmpP8nRZ7/pbmc_SCE.crb
+#> [14:45:03] Done!
 # }
 ```

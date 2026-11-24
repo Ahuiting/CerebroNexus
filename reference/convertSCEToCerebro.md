@@ -26,7 +26,7 @@ convertSCEToCerebro(
   nGene = "nGene",
   add_all_meta_data = TRUE,
   use_delayed_array = FALSE,
-  expression_matrix_mode = c("embedded", "h5"),
+  expression_matrix_mode = c("auto", "embedded", "h5"),
   codec = c("qs2", "rds"),
   viewer_binary = c("auto", "always", "never"),
   viewer_binary_threshold = 100000L,
@@ -40,7 +40,8 @@ convertSCEToCerebro(
   most_expressed_genes = NULL,
   spatial_split_by = NULL,
   extra_features = NULL,
-  .source_name = NULL
+  .source_name = NULL,
+  .x_stream = NULL
 )
 ```
 
@@ -152,6 +153,13 @@ convertSCEToCerebro(
   by a caller (see
   [`convertH5adToCerebro`](https://www.mheming.com/CerebroNexus/reference/convertH5adToCerebro.md)).
 
+- .x_stream:
+
+  Internal. Description of an h5ad matrix with more than 2^31 - 1
+  non-zero values that is streamed into the h5 expression file instead
+  of being held in `sce` (see
+  [`convertH5adToCerebro`](https://www.mheming.com/CerebroNexus/reference/convertH5adToCerebro.md)).
+
 ## Value
 
 The path of the written `.crb`, invisibly.
@@ -179,26 +187,27 @@ convertSCEToCerebro(
   organism = "Human",
   groups = c("sample", "cluster")
 )
-#> [22:42:56] Calculating most expressed genes and mean expression for each group...
-#> [22:42:56] Processing group: sample
-#> [22:42:56] Processing group: cluster
-#> [22:42:56] Most expressed genes and mean expression calculation completed.
-#> [22:42:56] Initializing Cerebro object...
-#> [22:42:56] Adding expression data (embedded)...
-#> [22:42:56] Collecting available meta data...
-#> [22:42:56] Extracting all meta data columns...
-#> [22:42:56] Extracting dimensional reductions...
-#> [22:42:56] Will export the following dimensional reductions: UMAP
-#> [22:42:56] Extracting tables of most expressed genes...
-#> [22:42:56] Extracting tables of mean expression...
-#> [22:42:56] No trajectories to extract...
-#> [22:42:56] Overview of Cerebro object:
+#> [14:44:59] Calculating most expressed genes and mean expression for each group...
+#> [14:44:59] Processing group: sample
+#> [14:44:59] Processing group: cluster
+#> [14:44:59] Most expressed genes and mean expression calculation completed.
+#> [14:44:59] expression_matrix_mode = "auto": 80 cells, so "embedded".
+#> [14:44:59] Initializing Cerebro object...
+#> [14:44:59] Adding expression data (embedded)...
+#> [14:44:59] Collecting available meta data...
+#> [14:44:59] Extracting all meta data columns...
+#> [14:44:59] Extracting dimensional reductions...
+#> [14:44:59] Will export the following dimensional reductions: UMAP
+#> [14:44:59] Extracting tables of most expressed genes...
+#> [14:44:59] Extracting tables of mean expression...
+#> [14:44:59] No trajectories to extract...
+#> [14:44:59] Overview of Cerebro object:
 #> class: Cerebro
-#> exporter package version: 8.4.0
+#> exporter package version: 8.4.10
 #> experiment name: PBMC (SCE)
 #> organism: Human
 #> date of analysis: 
-#> date of export: 2026-11-16
+#> date of export: 2026-11-24
 #> number of cells: 80
 #> number of genes: 230
 #> grouping variables (2): sample, cluster
@@ -213,8 +222,8 @@ convertSCEToCerebro(
 #> Immune repertoire:
 #> HLA typing: none
 #> Spatial data:
-#> [22:42:56] Saving Cerebro object to: /tmp/nix-shell-4521-2581468507/RtmpgeaiU4/output/cerebro_pbmc_SCE.crb
-#> [22:42:56] Done!
+#> [14:44:59] Saving Cerebro object to: /tmp/nix-shell-4235-3041636200/RtmpP8nRZ7/output/cerebro_pbmc_SCE.crb
+#> [14:44:59] Done!
 #> Successfully exported: cerebro_pbmc_SCE.crb
 # }
 ```

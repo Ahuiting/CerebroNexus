@@ -32,7 +32,7 @@ convertH5adToCerebro(
   nGene = NULL,
   add_all_meta_data = TRUE,
   use_delayed_array = FALSE,
-  expression_matrix_mode = c("embedded", "h5"),
+  expression_matrix_mode = c("auto", "embedded", "h5"),
   codec = c("qs2", "rds"),
   viewer_binary = c("auto", "always", "never"),
   viewer_binary_threshold = 100000L,
@@ -192,27 +192,27 @@ convertH5adToCerebro(
   groups = c("seurat_clusters", "sample"),
   expression_matrix_mode = "h5"
 )
-#> [22:42:55] Calculating most expressed genes and mean expression for each group...
-#> [22:42:55] Processing group: seurat_clusters
-#> [22:42:55] Processing group: sample
-#> [22:42:55] Most expressed genes and mean expression calculation completed.
-#> [22:42:56] Initializing Cerebro object...
-#> [22:42:56] Writing expression matrix to TENx HDF5 file: /tmp/nix-shell-4521-2581468507/RtmpgeaiU4/output/.crb-stage-11e82da0d14f/cerebro_file11e86883ba54.h5
-#> [22:42:56] Collecting available meta data...
-#> [22:42:56] Extracting all meta data columns...
-#> [22:42:56] Extracting dimensional reductions...
-#> [22:42:56] Will export the following dimensional reductions: UMAP
-#> [22:42:56] Extracting tables of most expressed genes...
-#> [22:42:56] Extracting tables of mean expression...
-#> [22:42:56] Extracting marker genes table...
-#> [22:42:56] No trajectories to extract...
-#> [22:42:56] Overview of Cerebro object:
+#> [14:44:58] Calculating most expressed genes and mean expression for each group...
+#> [14:44:58] Processing group: seurat_clusters
+#> [14:44:58] Processing group: sample
+#> [14:44:58] Most expressed genes and mean expression calculation completed.
+#> [14:44:59] Initializing Cerebro object...
+#> [14:44:59] Writing expression matrix to TENx HDF5 file: /tmp/nix-shell-4235-3041636200/RtmpP8nRZ7/output/.crb-stage-10c9475b5446/cerebro_file10c9be17813.h5
+#> [14:44:59] Collecting available meta data...
+#> [14:44:59] Extracting all meta data columns...
+#> [14:44:59] Extracting dimensional reductions...
+#> [14:44:59] Will export the following dimensional reductions: UMAP
+#> [14:44:59] Extracting tables of most expressed genes...
+#> [14:44:59] Extracting tables of mean expression...
+#> [14:44:59] Extracting marker genes table...
+#> [14:44:59] No trajectories to extract...
+#> [14:44:59] Overview of Cerebro object:
 #> class: Cerebro
-#> exporter package version: 8.4.0
-#> experiment name: file11e86883ba54
+#> exporter package version: 8.4.10
+#> experiment name: file10c9be17813
 #> organism: Human
 #> date of analysis: 
-#> date of export: 2026-11-16
+#> date of export: 2026-11-24
 #> number of cells: NULL
 #> number of genes: NULL
 #> grouping variables (2): seurat_clusters, sample
@@ -228,8 +228,8 @@ convertH5adToCerebro(
 #> Immune repertoire:
 #> HLA typing: none
 #> Spatial data:
-#> [22:42:56] Saving Cerebro object to: /tmp/nix-shell-4521-2581468507/RtmpgeaiU4/output/cerebro_file11e86883ba54.crb
-#> [22:42:56] Done!
-#> Successfully exported: cerebro_file11e86883ba54.crb
+#> [14:44:59] Saving Cerebro object to: /tmp/nix-shell-4235-3041636200/RtmpP8nRZ7/output/cerebro_file10c9be17813.crb
+#> [14:44:59] Done!
+#> Successfully exported: cerebro_file10c9be17813.crb
 # }
 ```

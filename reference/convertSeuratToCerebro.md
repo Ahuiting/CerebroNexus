@@ -21,7 +21,7 @@ convertSeuratToCerebro(
   nGene = "nFeature_RNA",
   add_all_meta_data = TRUE,
   use_delayed_array = FALSE,
-  expression_matrix_mode = c("embedded", "h5"),
+  expression_matrix_mode = c("auto", "embedded", "h5"),
   codec = c("qs2", "rds"),
   spatial_images = NULL,
   verbose = TRUE,
@@ -32,7 +32,7 @@ convertSeuratToCerebro(
   most_expressed_genes = NULL,
   bcr_file = NULL,
   tcr_file = NULL,
-  h5_compression_level = 0L,
+  h5_compression_level = 1L,
   immune_sidecar = c("auto", "always", "never"),
   immune_sidecar_threshold = 100000L
 )
@@ -111,7 +111,8 @@ convertSeuratToCerebro(
 - expression_matrix_mode:
 
   How to persist the expression matrix in the generated `.crb`. One of
-  `"embedded"` (default) or `"h5"`. See
+  `"auto"` (default: `"h5"` for more than 200,000 cells, `"embedded"`
+  otherwise), `"embedded"` or `"h5"`. See
   [`exportFromSeurat`](https://www.mheming.com/CerebroNexus/reference/exportFromSeurat.md)
   for details; briefly, `"embedded"` stores the matrix inside the
   `.crb`, and `"h5"` writes a TENx-format HDF5 file next to the `.crb`
@@ -187,8 +188,9 @@ convertSeuratToCerebro(
 
   Passed to
   [`exportFromSeurat`](https://www.mheming.com/CerebroNexus/reference/exportFromSeurat.md):
-  the gzip level of the H5 file (default 0, uncompressed), and whether
-  and from which size the immune repertoire is stored in a sibling file.
+  the gzip level of the H5 file (default 1; 0 is uncompressed), and
+  whether and from which size the immune repertoire is stored in a
+  sibling file.
 
 ## Value
 
@@ -246,30 +248,31 @@ convertSeuratToCerebro(
   groups = c("sample", "seurat_clusters"),
   groups_naming = list("seurat_clusters" = "cluster")
 )
-#> [22:42:57] Calculating most expressed genes and mean expression for each group...
-#> [22:42:57] Processing group: sample
-#> [22:42:57] Processing group: cluster
-#> [22:42:57] Most expressed genes and mean expression calculation completed.
+#> [14:45:00] Calculating most expressed genes and mean expression for each group...
+#> [14:45:00] Processing group: sample
+#> [14:45:00] Processing group: cluster
+#> [14:45:00] Most expressed genes and mean expression calculation completed.
 #> [INFO] No scRepertoire columns found in metadata, skipping repertoire extraction.
 #> [INFO] No immune repertoire data to add; object returned unchanged.
-#> [22:42:57] Initializing Cerebro object...
-#> [22:42:57] Adding expression data (embedded)...
-#> [22:42:57] Collecting available meta data...
-#> [22:42:57] Extracting all meta data columns...
-#> [22:42:57] Extracting dimensional reductions...
-#> [22:42:57] Will export the following dimensional reductions: umap
-#> [22:42:57] Extracting tables of most expressed genes...
-#> [22:42:57] Extracting tables of mean expression...
-#> [22:42:57] Extracting marker genes table...
-#> [22:42:57] No trajectories to extract...
-#> [22:42:57] Checking for spatial data...
-#> [22:42:57] Overview of Cerebro object:
+#> [14:45:00] expression_matrix_mode = "auto": 80 cells, so "embedded".
+#> [14:45:00] Initializing Cerebro object...
+#> [14:45:00] Adding expression data (embedded)...
+#> [14:45:00] Collecting available meta data...
+#> [14:45:00] Extracting all meta data columns...
+#> [14:45:00] Extracting dimensional reductions...
+#> [14:45:00] Will export the following dimensional reductions: umap
+#> [14:45:00] Extracting tables of most expressed genes...
+#> [14:45:00] Extracting tables of mean expression...
+#> [14:45:00] Extracting marker genes table...
+#> [14:45:00] No trajectories to extract...
+#> [14:45:00] Checking for spatial data...
+#> [14:45:00] Overview of Cerebro object:
 #> class: Cerebro
-#> exporter package version: 8.4.0
+#> exporter package version: 8.4.10
 #> experiment name: PBMC example
 #> organism: Human
 #> date of analysis: 
-#> date of export: 2026-11-16
+#> date of export: 2026-11-24
 #> number of cells: 80
 #> number of genes: 230
 #> grouping variables (2): sample, cluster
@@ -285,8 +288,8 @@ convertSeuratToCerebro(
 #> Immune repertoire:
 #> HLA typing: none
 #> Spatial data:
-#> [22:42:57] Saving Cerebro object to: /tmp/nix-shell-4521-2581468507/RtmpgeaiU4/output/cerebro_pbmc_seurat.crb
-#> [22:42:57] Done!
+#> [14:45:00] Saving Cerebro object to: /tmp/nix-shell-4235-3041636200/RtmpP8nRZ7/output/cerebro_pbmc_seurat.crb
+#> [14:45:00] Done!
 #> Successfully exported: cerebro_pbmc_seurat.crb
 # Creates cerebro_pbmc_seurat.crb in result_dir.
 # }

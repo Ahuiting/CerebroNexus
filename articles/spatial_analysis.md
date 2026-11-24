@@ -125,18 +125,21 @@ loaded.
 
 Objects from Seurat’s imaging readers
 ([`LoadXenium()`](https://satijalab.org/seurat/reference/ReadXenium.html),
-and in Seurat 6 `LoadAtera()` for 10x Atera) keep their counts in an
-assay named after the platform, not `RNA`, and Seurat names the per-cell
-totals after it (`nCount_Xenium`, `nCount_Atera`). Pass the assay and
-these two columns; the Builder picks them on its own. The readers add no
-dimensional reduction, so run
+and in Seurat 6
+[`LoadAtera()`](https://satijalab.org/seurat/reference/ReadAtera.html)
+for 10x Atera) keep their counts in an assay named after the platform,
+not `RNA`, and Seurat names the per-cell totals after it
+(`nCount_Xenium`, `nCount_Atera`). Pass the assay and these two columns;
+the Builder picks them on its own. The readers add no dimensional
+reduction, so run
 e.g. [`RunPCA()`](https://satijalab.org/seurat/reference/RunPCA.html)
 and [`RunUMAP()`](https://satijalab.org/seurat/reference/RunUMAP.html)
 first.
 
-`LoadAtera()` needs the `blosc`, `jsonlite` and `data.table` packages,
-and by default reads the cell centroids only. Whatever the FOV holds is
-exported, so ask for the rest when reading:
+[`LoadAtera()`](https://satijalab.org/seurat/reference/ReadAtera.html)
+needs the `blosc`, `jsonlite` and `data.table` packages, and by default
+reads the cell centroids only. Whatever the FOV holds is exported, so
+ask for the rest when reading:
 
 - `segmentations = "cell"` (or `"nucleus"`) for the cell outlines;
 - `molecule.coordinates = TRUE` together with `genes` for transcript
@@ -232,8 +235,8 @@ createShinyApp(
 | Parameter | Type | Default | Description |
 |----|----|----|----|
 | `spatial_images` | nested list | `NULL` | `dataset -> spatial entry -> image label -> path` (JPG, PNG, or SVG), or a descriptor `list(path = , bounds = )`. Dataset names must match `cerebro_data`. |
-| `spatial_image_settings` | nested list | `NULL` | `dataset -> spatial entry -> image label -> list(...)` with `flip_x`, `flip_y` (`TRUE` mirrors the image), `scale_x`, `scale_y` (1.0 = no scaling), `offset_x`, `offset_y`, `rotation`, and `image_opacity`. |
-| `spatial_plot_rotation` | nested list | `NULL` | `dataset -> spatial entry -> degrees`: rotation of cell coordinates (e.g. -90 to 270), for when capture-area and image orientation differ. |
+| `spatial_image_settings` | nested list | `NULL` | `dataset -> spatial entry -> image label -> list(...)` with `flip_x`, `flip_y` (`TRUE` mirrors the image), `scale_x`, `scale_y` (1.0 = no scaling), `offset_x`, `offset_y`, `rotation`, and `image_opacity`. Offsets, scales and flips act in the image’s own unrotated frame; `rotation` is applied last, about the coordinate origin, like `spatial_plot_rotation`. |
+| `spatial_plot_rotation` | nested list | `NULL` | `dataset -> spatial entry -> degrees`: rotation of cell coordinates (e.g. -90 to 270), for when capture-area and image orientation differ. A background image does not follow it on its own: give the image the same `rotation`, and keep its offsets and flips as found on the unrotated section. |
 
 A dataset, spatial entry, or image label that does not exist raises an
 error before anything is bundled, so a typo never produces a silently
