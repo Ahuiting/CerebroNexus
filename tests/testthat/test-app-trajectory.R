@@ -17,15 +17,15 @@ test_that("trajectory projection fits the viewport with selectors in the top bar
   app$click(selector = 'a[href="#shiny-tab-trajectory"]')
   app$wait_for_idle(timeout = 20000)
 
-  # The method/name selectors and Canvas projection render through nested
-  # renderUI, which takes several server round-trips; on a slow (CI)
-  # machine one wait_for_idle can return before they exist. Wait for the actual
-  # nodes so the assertions below never read a half-rendered tab.
+  # Shiny can go idle before the trajectory is painted. Wait for points and
+  # for the plot's loading indicator to clear before measuring it or dragging.
   app$wait_for_js(
     paste0(
       "document.getElementById('trajectory_selected_method') != null && ",
       "document.getElementById('trajectory_selected_name') != null && ",
-      "document.querySelector('#trajectory_projection_cell_view_host .cv-canvas-wrap > canvas:not(.cv-mini)') != null && ",
+      "Number(document.querySelector('#trajectory_projection_cell_view_host ",
+      ".cv-canvas-wrap > canvas:not(.cv-mini)')?.dataset.pointCount) > 0 && ",
+      "document.querySelector('#shiny-tab-trajectory .cerebro-local-feedback')?.hidden && ",
       "document.getElementById('trajectory_number_of_selected_cells') != null"
     ),
     timeout = 30000
